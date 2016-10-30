@@ -1,0 +1,24 @@
+<!--
+
+# Test initial state, with no commands.
+
+-->
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 20 20">
+<style type="text/css"><![CDATA[
+.branch {
+    fill: none;
+    stroke: #333;
+    stroke-width: 10;
+}
+.commit {
+    fill: #fff;
+    stroke: #333;
+    stroke-width: 5;
+}
+]]></style>
+<g id="master">
+<path class="branch" d="M0,0 L0,0" />
+<circle class="commit" cx="0" cy="0" r="7.5" />
+</g>
+</svg>

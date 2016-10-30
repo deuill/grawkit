@@ -3,10 +3,11 @@
 # Test a simple scenario of adding a few commits to `master`.
 
 git commit -m "Adding a new commit"
+git commit
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 120 20">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 220 20">
 <style type="text/css"><![CDATA[
 .branch {
     fill: none;
@@ -20,8 +21,9 @@ git commit -m "Adding a new commit"
 }
 ]]></style>
 <g id="master">
-<path class="branch" d="M0,0 L100,0" />
+<path class="branch" d="M0,0 L200,0" />
 <circle class="commit" cx="0" cy="0" r="7.5" />
 <circle class="commit" cx="100" cy="0" r="7.5" />
+<circle class="commit" cx="200" cy="0" r="7.5" />
 </g>
 </svg>
