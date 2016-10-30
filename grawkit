@@ -1,0 +1,157 @@
+#!/usr/bin/awk -f
+#
+# Grawkit — The Awksome Git Graph Generator.
+# ==========================================
+#
+# Grawkit is a tool that helps build SVG graphs from Git command-line descriptions.
+#
+# This documentation is built using Markdown syntax, and can be parsed out by
+# running `make doc` in the project root. Please check the project's README file
+# for additional information.
+#
+# Built-in Functions
+# ------------------
+#
+# This section contains global helper functions, used across different rules, as
+# defined in the next section below.
+#
+# > Function `t` processes the string passed as a template. It's mainly used for
+# > cleaning up strings with single quotes etc.
+function t(str) {
+	# Replace single quotes with double quotes.
+	gsub("'", "\"", str)
+
+	return str
+}
+
+# > Function `branch` renders pre-defined branch under a specific name to its
+# > SVG representation.
+function branch(name, _, buf, tmp, refs, i, bs, cs) {
+	# Find index of branch.
+	for (n in branches) {
+		if (n == name) break
+		i += 1
+	}
+
+	# Get commit refs.
+	split(branches[name], refs, ",")
+	bs = i * style["branch/spacing"]
+
+	# Add path for branch.
+	tmp = "M" refs[1] * style["commit/spacing"] "," bs
+	tmp = tmp " L" (length(refs) - 1) * style["commit/spacing"] "," bs
+
+	# Print path.
+	buf = sprintf(svg["g"], name)
+	buf = buf "\n" sprintf(svg["path"], tmp)
+
+	# Add commits on path.
+	for (c in refs) {
+		cs = refs[c] * style["commit/spacing"]
+
+		tmp = sprintf(svg["circle"], cs, bs, style["commit/radius"])
+		buf = buf "\n" tmp
+	}
+
+	buf = buf "\n" svg["/g"]
+	return buf
+}
+
+# Global Declarations
+# -------------------
+#
+# This block contains logic for initializing global variables used across Grawkit.
+
+BEGIN {
+	# Rule matching.
+	rule["commit"] = "^git commit"
+
+	# Style definitions.
+	style["branch/spacing"]      = "50"
+	style["branch/fill"]         = "none"
+	style["branch/stroke"]       = "#333"
+	style["branch/stroke-width"] = "10"
+
+	style["commit/spacing"]      = "100"
+	style["commit/fill"]         = "#fff"
+	style["commit/stroke"]       = style["branch/stroke"]
+	style["commit/stroke-width"] = style["branch/stroke-width"] / 2
+	style["commit/radius"]       = style["commit/stroke-width"] * 1.5
+
+	# Static SVG templates.
+	svg["svg"]    = t("<svg xmlns='http://www.w3.org/2000/svg' viewBox='%d %d %d %d'>")
+	svg["/svg"]   = "</svg>"
+	svg["g"]      = t("<g id='%s'>")
+	svg["/g"]     = "</g>"
+	svg["path"]   = t("<path class='branch' d='%s' />")
+	svg["circle"] = t("<circle class='commit' cx='%d' cy='%d' r='%s' />")
+
+	# Branch definitions.
+	branches["master"] = "0"
+	len["branches"]    = 1;
+
+	# Commit definitions.
+	commits[0]     = "b:master"
+	len["commits"] = 1;
+
+	# Tracks the state across calls.
+	state["branch"] = "master"
+	state["HEAD"]   = 0
+}
+
+# Rule Definitions
+# ----------------
+#
+# This block contains definitions for line manipulation rules used across Fawkss.
+# Rules may or may not be exclusive, i.e. the effects of one rule may cascade to
+# subsequent rules for the same line.
+#
+
+# > Match `git commit` declarations.
+$0 ~ rule["commit"] {
+	# Add new commit with specific message.
+	commits[len["commits"]] = "b:" state["branch"]
+
+	# Update commit references.
+	branches[state["branch"]] = branches[state["branch"]] "," len["commits"]
+	state["HEAD"] = len["commits"]
+
+	len["commits"] += 1
+}
+
+# SVG Graph Generation
+#
+# This block contains logic for building the final SVG output from Grawkit's
+# internal state, as defined in the command-line provided.
+#
+END {
+	xy = style["branch/stroke-width"] * -1
+	w = (style["commit/spacing"] * (len["commits"] - 1)) + (style["commit/stroke-width"] * 4)
+	h = (style["branch/spacing"] * (len["branches"] - 1)) + (style["branch/stroke-width"] * 2)
+
+	# Print SVG header.
+	printf svg["svg"], xy, xy, w, h
+	printf "\n"
+
+	# Print inline style definitions.
+	print t("<style type='text/css'><![CDATA[")
+	print ".branch {"
+	print "    fill: " style["branch/fill"] ";"
+	print "    stroke: " style["branch/stroke"] ";"
+	print "    stroke-width: " style["branch/stroke-width"] ";"
+	print "}"
+	print ".commit {"
+	print "    fill: " style["commit/fill"] ";"
+	print "    stroke: " style["commit/stroke"] ";"
+	print "    stroke-width: " style["commit/stroke-width"] ";"
+	print "}"
+	print "]]></style>"
+
+	# Print each branch and corresponding commits in turn.
+	for (name in branches) {
+		print branch(name)
+	}
+
+	# Print SVG footer.
+	print svg["/svg"]
+}
