@@ -26,7 +26,7 @@ function t(str) {
 
 # > Function `branch` renders pre-defined branch under a specific name to its
 # > SVG representation.
-function branch(name, _, buf, tmp, refs, i, bs, cs) {
+function branch(name, _, buf, tmp, refs, i, bspc, cspc) {
 	# Find index of branch.
 	for (n in branches) {
 		if (n == name) break
@@ -35,11 +35,11 @@ function branch(name, _, buf, tmp, refs, i, bs, cs) {
 
 	# Get commit refs.
 	split(branches[name], refs, ",")
-	bs = i * style["branch/spacing"]
+	bspc = i * style["branch/spacing"]
 
 	# Add path for branch.
-	tmp = "M" refs[1] * style["commit/spacing"] "," bs
-	tmp = tmp " L" (length(refs) - 1) * style["commit/spacing"] "," bs
+	tmp = "M" bspc "," refs[1] * style["commit/spacing"]
+	tmp = tmp " L" bspc "," (length(refs) - 1) * style["commit/spacing"]
 
 	# Print path.
 	buf = sprintf(svg["g"], name)
@@ -47,9 +47,9 @@ function branch(name, _, buf, tmp, refs, i, bs, cs) {
 
 	# Add commits on path.
 	for (c in refs) {
-		cs = refs[c] * style["commit/spacing"]
+		cspc = refs[c] * style["commit/spacing"]
 
-		tmp = sprintf(svg["circle"], cs, bs, style["commit/radius"])
+		tmp = sprintf(svg["circle"], bspc, cspc, style["commit/radius"])
 		buf = buf "\n" tmp
 	}
 
@@ -72,7 +72,7 @@ BEGIN {
 	style["branch/stroke"]       = "#333"
 	style["branch/stroke-width"] = "10"
 
-	style["commit/spacing"]      = "100"
+	style["commit/spacing"]      = "50"
 	style["commit/fill"]         = "#fff"
 	style["commit/stroke"]       = style["branch/stroke"]
 	style["commit/stroke-width"] = style["branch/stroke-width"] / 2
@@ -117,6 +117,7 @@ $0 ~ rule["commit"] {
 	state["HEAD"] = len["commits"]
 
 	len["commits"] += 1
+	next
 }
 
 # SVG Graph Generation
@@ -126,8 +127,8 @@ $0 ~ rule["commit"] {
 #
 END {
 	xy = style["branch/stroke-width"] * -1
-	w = (style["commit/spacing"] * (len["commits"] - 1)) + (style["commit/stroke-width"] * 4)
-	h = (style["branch/spacing"] * (len["branches"] - 1)) + (style["branch/stroke-width"] * 2)
+	w = (style["branch/spacing"] * (len["branches"] - 1)) + (style["branch/stroke-width"] * 2)
+	h = (style["commit/spacing"] * (len["commits"] - 1)) + (style["commit/stroke-width"] * 4)
 
 	# Print SVG header.
 	printf svg["svg"], xy, xy, w, h
