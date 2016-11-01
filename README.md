@@ -1,4 +1,4 @@
-# Grawkit - The AWKsome Git Graph Toolkit
+# Grawkit - The Awksome Git Graph Generator
 
 Grawkit is a tool that helps build SVG graphs from git command-line descriptions, and is built in Awk.
 
