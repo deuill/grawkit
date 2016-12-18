@@ -1,0 +1,64 @@
+<!--
+
+# Test creating and merging between multiple branches.
+
+git commit -m "Commit on master"
+
+git branch test-first
+git branch test-second
+
+git commit -m "Still on master"
+
+git checkout test-first
+git commit
+
+git checkout test-second
+git commit
+git merge test-first
+
+git checkout master
+git merge test-second
+
+-->
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 120 320">
+<style type="text/css"><![CDATA[
+.branch {
+    fill: none;
+    stroke-width: 10;
+}
+.commit {
+    fill: #fff;
+    stroke-width: 5;
+}
+.branch-master {stroke: #002b36}
+.branch-test-first {stroke: #268bd2}
+.branch-test-second {stroke: #859900}
+]]></style>
+<g class="merge">
+	<g class="branch-test-second">
+		<path class="branch" d="M0,50 C100,50 100,50 100,200" />
+		<path class="branch" d="M0,300 C100,300 100,300 100,200" />
+	</g>
+	<g class="branch-test-first">
+		<path class="branch" d="M0,50 C50,50 50,50 50,150" />
+		<path class="branch" d="M100,250 C50,250 50,250 50,150" />
+	</g>
+</g>
+<g class="branch-test-second">
+	<path class="branch" d="M100,200 L100,250" />
+	<circle class="commit" cx="100" cy="200" r="7.5" />
+	<circle class="commit" cx="100" cy="250" r="7.5" />
+</g>
+<g class="branch-test-first">
+	<path class="branch" d="M50,150 L50,150" />
+	<circle class="commit" cx="50" cy="150" r="7.5" />
+</g>
+<g class="branch-master">
+	<path class="branch" d="M0,0 L0,300" />
+	<circle class="commit" cx="0" cy="0" r="7.5" />
+	<circle class="commit" cx="0" cy="50" r="7.5" />
+	<circle class="commit" cx="0" cy="100" r="7.5" />
+	<circle class="commit" cx="0" cy="300" r="7.5" />
+</g>
+</svg>

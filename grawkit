@@ -46,7 +46,7 @@ function addcommit(type, message) {
 
 # > Function `branch` renders pre-defined branch under a specific name to its
 # > SVG representation.
-function branch(idx, _, buf, tmp, refs, merge, m, i, bspc, cspc) {
+function branch(idx, _, buf, tmp, refs, i, bspc, cspc) {
 	# Do not render branch with no commits.
 	if (branches[idx,"refs"] == "") {
 		return
@@ -57,41 +57,59 @@ function branch(idx, _, buf, tmp, refs, merge, m, i, bspc, cspc) {
 	bspc = idx * style["branch/spacing"]
 
 	# Print branch root element.
-	buf = sprintf(svg["g"], branches[idx,"name"])
-
-	# Add merge paths for branch, if any.
-	split(branches[idx,"merges"], merge, ",")
-	for (i in merge) {
-		split(merge[i], m, "|")
-
-		# Add starting point to previous branch ending point.
-		tmp = "M" m[1] * style["branch/spacing"] "," m[2] * style["commit/spacing"]
-
-		# Add Bezier curve leading to current branch starting point.
-		tmp = tmp " C" m[1] * style["branch/spacing"] "," m[2] * style["commit/spacing"]
-		tmp = tmp " " bspc "," m[2] * style["commit/spacing"]
-		tmp = tmp " " bspc "," refs[1] * style["commit/spacing"]
-
-		# Draw the path.
-		buf = buf "\n" sprintf(svg["path"], tmp)
-	}
+	buf = sprintf(svg["g"], "branch-" branches[idx,"name"])
 
 	# Add path for branch.
 	tmp = "M" bspc "," refs[1] * style["commit/spacing"]
 	tmp = tmp " L" bspc "," refs[length(refs)] * style["commit/spacing"]
 
 	# Print path.
-	buf = buf "\n" sprintf(svg["path"], tmp)
+	buf = buf "\n\t" sprintf(svg["path"], tmp)
 
 	# Add commits on path.
 	for (i in refs) {
 		cspc = refs[i] * style["commit/spacing"]
 
 		tmp = sprintf(svg["circle"], bspc, cspc, style["commit/radius"])
-		buf = buf "\n" tmp
+		buf = buf "\n\t" tmp
 	}
 
 	buf = buf "\n" svg["/g"]
+	return buf
+}
+
+# > Function `merge` renders merge paths for a branch pointed to by `idx`.
+function merge(idx, _, buf, tmp, refs, fields, m, i, bspc) {
+	# Do not render merge paths for branch with no commits.
+	if (branches[idx,"merges"] == "") {
+		return
+	}
+
+	# Get commit refs.
+	split(branches[idx,"refs"], refs, ",")
+	bspc = idx * style["branch/spacing"]
+
+	# Print branch root element.
+	buf = "\n\t" sprintf(svg["g"], "branch-" branches[idx,"name"])
+
+	# Add merge paths for branch, if any.
+	split(branches[idx,"merges"], fields, ",")
+	for (i in fields) {
+		split(fields[i], m, "|")
+
+		# Add starting point to previous branch ending point.
+		tmp = "M" m[1] * style["branch/spacing"] "," m[2] * style["commit/spacing"]
+
+		# Add Bezier curve leading to current branch starting point.
+		tmp = tmp " C" bspc "," m[2] * style["commit/spacing"]
+		tmp = tmp " " bspc "," m[2] * style["commit/spacing"]
+		tmp = tmp " " bspc "," refs[1] * style["commit/spacing"]
+
+		# Draw the path.
+		buf = buf "\n\t\t" sprintf(svg["path"], tmp)
+	}
+
+	buf = buf "\n\t" svg["/g"]
 	return buf
 }
 
@@ -125,19 +143,20 @@ BEGIN {
 	# Style definitions.
 	style["branch/spacing"]      = "50"
 	style["branch/fill"]         = "none"
-	style["branch/stroke"]       = "#333"
 	style["branch/stroke-width"] = "10"
 
 	style["commit/spacing"]      = "50"
 	style["commit/fill"]         = "#fff"
-	style["commit/stroke"]       = style["branch/stroke"]
 	style["commit/stroke-width"] = style["branch/stroke-width"] / 2
 	style["commit/radius"]       = style["commit/stroke-width"] * 1.5
+
+	# Color scheme, based on `base16-solarized-dark`
+	style["pallete"] = "#002b36,#268bd2,#859900,#cb4b16,#2aa198,#dc322f,#d33682,#6c71c4,#b58900"
 
 	# Static SVG templates.
 	svg["svg"]    = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"%d %d %d %d\">"
 	svg["/svg"]   = "</svg>"
-	svg["g"]      = "<g id=\"%s\">"
+	svg["g"]      = "<g class=\"%s\">"
 	svg["/g"]     = "</g>"
 	svg["path"]   = "<path class=\"branch\" d=\"%s\" />"
 	svg["circle"] = "<circle class=\"commit\" cx=\"%d\" cy=\"%d\" r=\"%s\" />"
@@ -269,6 +288,9 @@ $0 ~ rule["merge"] {
 # internal state, as defined in the command-line provided.
 
 END {
+	buf = ""
+	split(style["pallete"], pallete, ",")
+
 	xy = style["branch/stroke-width"] * -1
 	w = (style["branch/spacing"] * (len["branches"] - 1)) + (style["branch/stroke-width"] * 2)
 	h = (style["commit/spacing"] * (len["commits"] - 1)) + (style["commit/stroke-width"] * 4)
@@ -281,15 +303,29 @@ END {
 	print "<style type=\"text/css\"><![CDATA["
 	print ".branch {"
 	print "    fill: " style["branch/fill"] ";"
-	print "    stroke: " style["branch/stroke"] ";"
 	print "    stroke-width: " style["branch/stroke-width"] ";"
 	print "}"
 	print ".commit {"
 	print "    fill: " style["commit/fill"] ";"
-	print "    stroke: " style["commit/stroke"] ";"
 	print "    stroke-width: " style["commit/stroke-width"] ";"
 	print "}"
+
+	# Print color scheme definitions for branches.
+	for (i = 0; i < len["branches"]; i++) {
+		print ".branch-" branches[i,"name"] " {stroke: " pallete[i + 1] "}"
+	}
+
 	print "]]></style>"
+
+	# Print merge paths for branches.
+	for (i = len["branches"] - 1; i >= 0; i--) {
+		buf = buf merge(i)
+	}
+
+	if (buf != "") {
+		printf svg["g"], "merge"
+		print buf "\n" svg["/g"]
+	}
 
 	# Print each branch and corresponding commits in turn.
 	for (i = len["branches"] - 1; i >= 0; i--) {

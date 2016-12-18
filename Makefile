@@ -16,7 +16,7 @@ SHELL = /bin/bash
 DIFF  = $(shell which colordiff || which diff)
 
 # Test files to execute.
-TESTS ?= $(shell find tests/*/*)
+TESTS ?= $(shell find tests/*)
 
 # Color & style definitions.
 BOLD      = \033[1m
