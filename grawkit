@@ -1,4 +1,4 @@
-#!/usr/bin/awk -f
+#!/usr/bin/gawk -f
 #
 # Grawkit — The Awksome Git Graph Generator.
 # ==========================================
@@ -14,40 +14,78 @@
 #
 # This section contains global helper functions, used across different rules, as
 # defined in the next section below.
-#
-# > Function `t` processes the string passed as a template. It's mainly used for
-# > cleaning up strings with single quotes etc.
-function t(str) {
-	# Replace single quotes with double quotes.
-	gsub("'", "\"", str)
 
-	return str
+# > Function `addbranch` adds a new, empty branch to the internal list of branches
+# > to render.
+function addbranch(name) {
+	branches[len["branches"],"name"] = name
+	branches[len["branches"],"refs"] = ""
+	branches[len["branches"],"merges"] = state["branch"] "|" state["HEAD"]
+
+	len["branches"] += 1
+}
+
+# > Function `addcommit` adds a new commit, with a specific type and message, to
+# > the internal list of commits to render.
+function addcommit(type, message) {
+	# Add commit information.
+	commits[len["commits"],"branch"]  = state["branch"]
+	commits[len["commits"],"type"]    = type
+	commits[len["commits"],"message"] = msg
+
+	# Update commit references.
+	if (branches[state["branch"],"refs"] == "") {
+		branches[state["branch"],"refs"] = len["commits"]
+	} else {
+		branches[state["branch"],"refs"] = branches[state["branch"],"refs"] "," len["commits"]
+	}
+
+	state["HEAD"] = len["commits"]
+	len["commits"] += 1
 }
 
 # > Function `branch` renders pre-defined branch under a specific name to its
 # > SVG representation.
-function branch(name, _, buf, tmp, refs, i, bspc, cspc) {
-	# Find index of branch.
-	for (n in branches) {
-		if (n == name) break
-		i += 1
+function branch(idx, _, buf, tmp, refs, merge, m, i, bspc, cspc) {
+	# Do not render branch with no commits.
+	if (branches[idx,"refs"] == "") {
+		return
 	}
 
 	# Get commit refs.
-	split(branches[name], refs, ",")
-	bspc = i * style["branch/spacing"]
+	split(branches[idx,"refs"], refs, ",")
+	bspc = idx * style["branch/spacing"]
+
+	# Print branch root element.
+	buf = sprintf(svg["g"], branches[idx,"name"])
+
+	# Add merge paths for branch, if any.
+	split(branches[idx,"merges"], merge, ",")
+	for (i in merge) {
+		split(merge[i], m, "|")
+
+		# Add starting point to previous branch ending point.
+		tmp = "M" m[1] * style["branch/spacing"] "," m[2] * style["commit/spacing"]
+
+		# Add Bezier curve leading to current branch starting point.
+		tmp = tmp " C" m[1] * style["branch/spacing"] "," m[2] * style["commit/spacing"]
+		tmp = tmp " " bspc "," m[2] * style["commit/spacing"]
+		tmp = tmp " " bspc "," refs[1] * style["commit/spacing"]
+
+		# Draw the path.
+		buf = buf "\n" sprintf(svg["path"], tmp)
+	}
 
 	# Add path for branch.
 	tmp = "M" bspc "," refs[1] * style["commit/spacing"]
-	tmp = tmp " L" bspc "," (length(refs) - 1) * style["commit/spacing"]
+	tmp = tmp " L" bspc "," refs[length(refs)] * style["commit/spacing"]
 
 	# Print path.
-	buf = sprintf(svg["g"], name)
 	buf = buf "\n" sprintf(svg["path"], tmp)
 
 	# Add commits on path.
-	for (c in refs) {
-		cspc = refs[c] * style["commit/spacing"]
+	for (i in refs) {
+		cspc = refs[i] * style["commit/spacing"]
 
 		tmp = sprintf(svg["circle"], bspc, cspc, style["commit/radius"])
 		buf = buf "\n" tmp
@@ -63,8 +101,26 @@ function branch(name, _, buf, tmp, refs, i, bspc, cspc) {
 # This block contains logic for initializing global variables used across Grawkit.
 
 BEGIN {
+	# Errors.
+	error["branch/no-name"]   = "Empty name for `git branch`, line %d\n"
+	error["branch/duplicate"] = "Unable to create duplicate branch '%s', line %d\n"
+	error["checkout/no-branch"] = "No branch with name '%s', line %d\n"
+
+	error["checkout/no-name"]   = "Empty name for `git checkout`, line %d\n"
+	error["merge/no-name"]   = "Empty name for `git merge`, line %d\n"
+
 	# Rule matching.
-	rule["commit"] = "^git commit"
+	rule["commit"]         = "^git commit"
+	rule["commit/message"] = "(--message|-m)[ ]+['|\"]([^'\"]+)['|\"]"
+
+	rule["branch"]      = "^git branch"
+	rule["branch/name"] = rule["branch"] "[ ]*([^ ]+)"
+
+	rule["checkout"]      = "^git checkout"
+	rule["checkout/name"] = rule["checkout"] "[ ]*([^ ]+)"
+
+	rule["merge"]      = "^git merge"
+	rule["merge/name"] = rule["merge"] "[ ]*([^ ]+)"
 
 	# Style definitions.
 	style["branch/spacing"]      = "50"
@@ -79,52 +135,139 @@ BEGIN {
 	style["commit/radius"]       = style["commit/stroke-width"] * 1.5
 
 	# Static SVG templates.
-	svg["svg"]    = t("<svg xmlns='http://www.w3.org/2000/svg' viewBox='%d %d %d %d'>")
+	svg["svg"]    = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"%d %d %d %d\">"
 	svg["/svg"]   = "</svg>"
-	svg["g"]      = t("<g id='%s'>")
+	svg["g"]      = "<g id=\"%s\">"
 	svg["/g"]     = "</g>"
-	svg["path"]   = t("<path class='branch' d='%s' />")
-	svg["circle"] = t("<circle class='commit' cx='%d' cy='%d' r='%s' />")
+	svg["path"]   = "<path class=\"branch\" d=\"%s\" />"
+	svg["circle"] = "<circle class=\"commit\" cx=\"%d\" cy=\"%d\" r=\"%s\" />"
 
 	# Branch definitions.
-	branches["master"] = "0"
-	len["branches"]    = 1;
+	branches[0,"name"] = "master"
+	branches[0,"refs"] = 0
+	branches[0,"merges"] = ""
+	len["branches"] = 1
 
 	# Commit definitions.
-	commits[0]     = "b:master"
-	len["commits"] = 1;
+	commits[0,"branch"]  = "master"
+	commits[0,"message"] = "Initial commit"
+	commits[0,"type"]    = "commit"
+	len["commits"] = 1
 
 	# Tracks the state across calls.
-	state["branch"] = "master"
+	state["branch"] = 0
 	state["HEAD"]   = 0
 }
 
 # Rule Definitions
 # ----------------
 #
-# This block contains definitions for line manipulation rules used across Fawkss.
+# This block contains definitions for line manipulation rules used across Grawkit.
 # Rules may or may not be exclusive, i.e. the effects of one rule may cascade to
 # subsequent rules for the same line.
-#
 
 # > Match `git commit` declarations.
 $0 ~ rule["commit"] {
-	# Add new commit with specific message.
-	commits[len["commits"]] = "b:" state["branch"]
+	# Get commit message, if any.
+	match($0, rule["commit/message"], m)
 
-	# Update commit references.
-	branches[state["branch"]] = branches[state["branch"]] "," len["commits"]
-	state["HEAD"] = len["commits"]
+	# Add new commit.
+	addcommit("commit", (2 in m) ? m[2] : "Empty message")
+	next
+}
 
-	len["commits"] += 1
+# > Match `git branch` declarations.
+$0 ~ rule["branch"] {
+	# Get branch name and throw error if one is not set.
+	match($0, rule["branch/name"], n)
+	if (n[1] == "") {
+		printf error["branch/no-name"], FNR
+		exit 1
+	}
+
+	# Throw error if branch already exists.
+	for (i = 0; i < len["branches"]; i++) {
+		if (branches[i,"name"] == n[1]) {
+			printf error["branch/duplicate"], n[1], FNR | "cat >&2"
+			exit 1
+		}
+	}
+
+	# Add empty branch as a placeholder.
+	addbranch(n[1])
+	next
+}
+
+# > Match `git checkout` declarations.
+$0 ~ rule["checkout"] {
+	# Get branch name and throw error if one is not set.
+	match($0, rule["checkout/name"], n)
+	if (n[1] == "") {
+		printf error["checkout/no-name"], FNR | "cat >&2"
+		exit 1
+	}
+
+	# Throw error if branch does not exist.
+	found = 0
+	for (i = 0; i < len["branches"]; i++) {
+		if (branches[i,"name"] == n[1]) {
+			found = 1
+			break
+		}
+	}
+
+	if (found == 0) {
+		printf error["branch/no-branch"], n[1], FNR | "cat >&2"
+		exit 1
+	}
+
+	# Set internal state.
+	state["branch"] = i
+	next
+}
+
+# > Match `git merge` declarations.
+$0 ~ rule["merge"] {
+	# Get branch name and throw error if one is not set.
+	match($0, rule["merge/name"], n)
+	if (n[1] == "") {
+		printf error["merge/no-name"], FNR | "cat >&2"
+		exit 1
+	}
+
+	# Throw error if branch does not exist.
+	found = 0
+	for (i = 0; i < len["branches"]; i++) {
+		if (branches[i,"name"] == n[1]) {
+			found = 1
+			break
+		}
+	}
+
+	if (found == 0) {
+		printf error["branch/no-branch"], n[1], FNR | "cat >&2"
+		exit 1
+	}
+
+	# Add a merge commit to current branch.
+	addcommit("merge", "Merge commit")
+
+	# Add merge reference to target branch.
+	if (branches[i,"merges"] == "") {
+		branches[i,"merges"] = state["branch"] "|" state["HEAD"]
+	} else {
+		branches[i,"merges"] =  branches[i,"merges"] "," state["branch"] "|" state["HEAD"]
+	}
+
 	next
 }
 
 # SVG Graph Generation
+# --------------------
 #
 # This block contains logic for building the final SVG output from Grawkit's
 # internal state, as defined in the command-line provided.
-#
+
 END {
 	xy = style["branch/stroke-width"] * -1
 	w = (style["branch/spacing"] * (len["branches"] - 1)) + (style["branch/stroke-width"] * 2)
@@ -135,7 +278,7 @@ END {
 	printf "\n"
 
 	# Print inline style definitions.
-	print t("<style type='text/css'><![CDATA[")
+	print "<style type=\"text/css\"><![CDATA["
 	print ".branch {"
 	print "    fill: " style["branch/fill"] ";"
 	print "    stroke: " style["branch/stroke"] ";"
@@ -149,8 +292,8 @@ END {
 	print "]]></style>"
 
 	# Print each branch and corresponding commits in turn.
-	for (name in branches) {
-		print branch(name)
+	for (i = len["branches"] - 1; i >= 0; i--) {
+		print branch(i)
 	}
 
 	# Print SVG footer.

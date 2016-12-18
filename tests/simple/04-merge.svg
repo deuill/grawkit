@@ -1,0 +1,48 @@
+<!--
+
+# Test the scenario of a branch merging from and
+# back to master.
+
+git commit -m "Commit on master"
+
+git branch test-merging
+git commit -m "Still on master"
+
+git checkout test-merging
+git commit -m 'A sample commit'
+
+git checkout master
+git commit -m "Another master commit"
+
+git merge test-merging
+
+-->
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 70 270">
+<style type="text/css"><![CDATA[
+.branch {
+    fill: none;
+    stroke: #333;
+    stroke-width: 10;
+}
+.commit {
+    fill: #fff;
+    stroke: #333;
+    stroke-width: 5;
+}
+]]></style>
+<g id="test-merging">
+<path class="branch" d="M0,50 C0,50 50,50 50,150" />
+<path class="branch" d="M0,250 C0,250 50,250 50,150" />
+<path class="branch" d="M50,150 L50,150" />
+<circle class="commit" cx="50" cy="150" r="7.5" />
+</g>
+<g id="master">
+<path class="branch" d="M0,0 L0,250" />
+<circle class="commit" cx="0" cy="0" r="7.5" />
+<circle class="commit" cx="0" cy="50" r="7.5" />
+<circle class="commit" cx="0" cy="100" r="7.5" />
+<circle class="commit" cx="0" cy="200" r="7.5" />
+<circle class="commit" cx="0" cy="250" r="7.5" />
+</g>
+</svg>
