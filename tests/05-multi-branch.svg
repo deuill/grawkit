@@ -8,6 +8,7 @@ git branch test-first
 git branch test-second
 
 git commit -m "Still on master"
+git tag v.1.0.0
 
 git checkout test-first
 git commit
@@ -15,25 +16,38 @@ git commit
 git checkout test-second
 git commit
 git merge test-first
+git tag v.2.0.0-rc1
 
 git checkout master
 git merge test-second
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 120 320">
+<svg xmlns="http://www.w3.org/2000/svg" transform="translate(10,10)">
 <style type="text/css"><![CDATA[
 .branch {
-    fill: none;
-    stroke-width: 10;
+	fill: none;
+	stroke-width: 10;
 }
 .commit {
-    fill: #fff;
-    stroke-width: 5;
+	fill: #fff;
+	stroke-width: 5;
 }
-.branch-master {stroke: #002b36}
-.branch-test-first {stroke: #268bd2}
-.branch-test-second {stroke: #859900}
+.label-tag {
+	fill: #333;
+}
+.label-rect {
+	stroke: none;
+}
+.label-text {
+	font-family: Inconsolata, Consolas, monospace;
+	font-size: 1.5em;
+	fill: #fff;
+	stroke: none;
+}
+.branch-master {stroke: #002b36; fill: #002b36}
+.branch-test-first {stroke: #268bd2; fill: #268bd2}
+.branch-test-second {stroke: #859900; fill: #859900}
 ]]></style>
 <g class="merge">
 	<g class="branch-test-second">
@@ -49,10 +63,22 @@ git merge test-second
 	<path class="branch" d="M100,200 L100,250" />
 	<circle class="commit" cx="100" cy="200" r="7.5" />
 	<circle class="commit" cx="100" cy="250" r="7.5" />
+	<g class="label-tag" transform="translate(150,250)">
+		<rect x="0" y="-12" width="120" height="25" rx="3" class="label-rect" />
+		<text x="10" y="5" class="label-text">v.2.0.0-rc1</text>
+	</g>
+	<g class="label-branch" transform="translate(280,250)">
+		<rect x="0" y="-12" width="120" height="25" rx="3" class="label-rect" />
+		<text x="10" y="5" class="label-text">test-second</text>
+	</g>
 </g>
 <g class="branch-test-first">
 	<path class="branch" d="M50,150 L50,150" />
 	<circle class="commit" cx="50" cy="150" r="7.5" />
+	<g class="label-branch" transform="translate(150,150)">
+		<rect x="0" y="-12" width="110" height="25" rx="3" class="label-rect" />
+		<text x="10" y="5" class="label-text">test-first</text>
+	</g>
 </g>
 <g class="branch-master">
 	<path class="branch" d="M0,0 L0,300" />
@@ -60,5 +86,13 @@ git merge test-second
 	<circle class="commit" cx="0" cy="50" r="7.5" />
 	<circle class="commit" cx="0" cy="100" r="7.5" />
 	<circle class="commit" cx="0" cy="300" r="7.5" />
+	<g class="label-tag" transform="translate(150,100)">
+		<rect x="0" y="-12" width="80" height="25" rx="3" class="label-rect" />
+		<text x="10" y="5" class="label-text">v.1.0.0</text>
+	</g>
+	<g class="label-branch" transform="translate(150,300)">
+		<rect x="0" y="-12" width="70" height="25" rx="3" class="label-rect" />
+		<text x="10" y="5" class="label-text">master</text>
+	</g>
 </g>
 </svg>
