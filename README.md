@@ -14,7 +14,7 @@ Grawkit has basic support for common `git` commands such as `git branch`, `git t
 
 <table>
 	<tr>
-		<th>Command-Line</th>
+		<th width="40%">Command-Line</th>
 		<th>Generated Graph</th>
 	</tr>
 	<tr>
