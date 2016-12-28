@@ -94,16 +94,16 @@ function label(idx, class, name, _, buf, w, h, hspc, vspc) {
 	h = style["label/spacing"] * 2.5
 
 	# Calculate label offsets.
-	hspc = (len["branches"] * style["branch/spacing"]) + __label_offset[idx]
+	hspc = (len["branches"] * style["branch/spacing"]) + label_offset[idx]
 	vspc = idx * style["commit/spacing"]
 
 	# Store width of labels in relation to their commit index.
-	__label_offset[idx] = w + style["label/spacing"]
+	label_offset[idx] += w + style["label/spacing"]
 
 	# Draw label elements.
 	buf = buf "\n\t" sprintf(svg["gg"], "label-" class, hspc, vspc)
-	buf = buf "\n\t\t" sprintf(svg["rect"], 0, (h / 2) * -1, w, h, style["label/round"])
-	buf = buf "\n\t\t" sprintf(svg["text"], style["label/spacing"], style["label/spacing"] / 2, name)
+	buf = buf "\n\t\t" sprintf(svg["rect"], 0, style["label/spacing"] * -1.5, w, h, style["label/round"])
+	buf = buf "\n\t\t" sprintf(svg["text"], style["label/spacing"], style["label/spacing"] / 4, name)
 	buf = buf "\n\t" svg["/g"]
 
 	return buf
@@ -184,16 +184,18 @@ BEGIN {
 	style["commit/stroke-width"] = style["branch/stroke-width"] / 2
 	style["commit/radius"]       = style["commit/stroke-width"] * 1.5
 
-	style["label/spacing"] = "10"
-	style["label/round"]   = "3"
-	style["label/fill"]    = "#333"
-	style["label/text"]    = "#fff"
+	style["label/spacing"]   = "10"
+	style["label/round"]     = "3"
+	style["label/fill"]      = "#333"
+	style["label/text"]      = "#fff"
+	style["label/font"]      = "Inconsolata, Consolas, monospace"
+	style["label/font-size"] = "18px"
 
 	# Color scheme, based on `base16-solarized-dark`
 	style["pallete"] = "#002b36,#268bd2,#859900,#cb4b16,#2aa198,#dc322f,#d33682,#6c71c4,#b58900"
 
 	# Static SVG templates.
-	svg["svg"]    = "<svg xmlns=\"http://www.w3.org/2000/svg\" transform=\"translate(%d,%d)\">"
+	svg["svg"]    = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"%d %d %d %d\">"
 	svg["/svg"]   = "</svg>"
 	svg["g"]      = "<g class=\"%s\">"
 	svg["gg"]     = "<g class=\"%s\" transform=\"translate(%d,%d)\">"
@@ -348,11 +350,39 @@ $0 ~ rule["tag"] {
 # internal state, as defined in the command-line provided.
 
 END {
-	buf = ""
-	split(style["pallete"], pallete, ",")
+	# Pre-build SVG body.
+	body = ""
+
+	# Print merge paths for branches.
+	for (i = len["branches"] - 1; i >= 0; i--) {
+		body = body merge(i)
+	}
+
+	if (body != "") {
+		body = sprintf(svg["g"], "merge") body
+		body = body "\n" svg["/g"]
+	}
+
+	# Print each branch and corresponding commits in turn.
+	for (i = len["branches"] - 1; i >= 0; i--) {
+		body = body "\n" branch(i)
+	}
+
+	# Calculate SVG canvas dimensions.
+	h = (style["commit/spacing"] * (len["commits"] - 1)) + (style["commit/stroke-width"] * 4)
+	xy = style["branch/stroke-width"] * -1
+
+	# Calculate canvas width from largest combined label offset.
+	w = 0
+
+	for (i in label_offset) {
+		w = (label_offset[i] > w) ? label_offset[i] : w;
+	}
+
+	w += style["branch/spacing"] * len["branches"]
 
 	# Print SVG header.
-	printf svg["svg"], style["branch/stroke-width"], style["branch/stroke-width"]
+	printf svg["svg"], xy, xy, w, h
 	printf "\n"
 
 	# Print inline style definitions.
@@ -372,11 +402,13 @@ END {
 	print "\tstroke: none;"
 	print "}"
 	print ".label-text {"
-	print "\tfont-family: Inconsolata, Consolas, monospace;"
-	print "\tfont-size: 1.5em;"
+	print "\tfont-family: " style["label/font"] ";"
+	print "\tfont-size: " style["label/font-size"] ";"
 	print "\tfill: " style["label/text"] ";"
 	print "\tstroke: none;"
 	print "}"
+
+	split(style["pallete"], pallete, ",")
 
 	# Print color scheme definitions for branches.
 	for (i = 0; i < len["branches"]; i++) {
@@ -385,20 +417,8 @@ END {
 
 	print "]]></style>"
 
-	# Print merge paths for branches.
-	for (i = len["branches"] - 1; i >= 0; i--) {
-		buf = buf merge(i)
-	}
-
-	if (buf != "") {
-		printf svg["g"], "merge"
-		print buf "\n" svg["/g"]
-	}
-
-	# Print each branch and corresponding commits in turn.
-	for (i = len["branches"] - 1; i >= 0; i--) {
-		print branch(i)
-	}
+	# Print SVG body.
+	print body
 
 	# Print SVG footer.
 	print svg["/svg"]

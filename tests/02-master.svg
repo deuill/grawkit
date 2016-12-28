@@ -7,7 +7,7 @@ git commit
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" transform="translate(10,10)">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 130 120">
 <style type="text/css"><![CDATA[
 .branch {
 	fill: none;
@@ -25,20 +25,21 @@ git commit
 }
 .label-text {
 	font-family: Inconsolata, Consolas, monospace;
-	font-size: 1.5em;
+	font-size: 18px;
 	fill: #fff;
 	stroke: none;
 }
 .branch-master {stroke: #002b36; fill: #002b36}
 ]]></style>
+
 <g class="branch-master">
 	<path class="branch" d="M0,0 L0,100" />
 	<circle class="commit" cx="0" cy="0" r="7.5" />
 	<circle class="commit" cx="0" cy="50" r="7.5" />
 	<circle class="commit" cx="0" cy="100" r="7.5" />
 	<g class="label-branch" transform="translate(50,100)">
-		<rect x="0" y="-12" width="70" height="25" rx="3" class="label-rect" />
-		<text x="10" y="5" class="label-text">master</text>
+		<rect x="0" y="-15" width="70" height="25" rx="3" class="label-rect" />
+		<text x="10" y="2" class="label-text">master</text>
 	</g>
 </g>
 </svg>
