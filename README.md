@@ -20,7 +20,7 @@ Grawkit has basic support for common `git` commands such as `git branch`, `git t
 	<tr>
 		<th><pre><code>git commit -m "Adding a new commit"
 git commit</code></pre></th>
-		<th><img src="https://rawgit.com/deuill/grawkit/master/tests/02-master.svg" alt=""></th>
+		<th><img src="https://rawgit.com/deuill/grawkit/55cacf1c890c47f99a3e9c9dbd86a8fffe464568/tests/02-master.svg" alt=""></th>
 	</tr>
 	<tr>
 		<th><pre><code>git commit -m "Commit on master"
@@ -34,7 +34,7 @@ git commit
 
 git checkout master
 git commit</code></pre></th>
-		<th><img src="https://rawgit.com/deuill/grawkit/master/tests/03-branch.svg" alt=""></th>
+		<th><img src="https://rawgit.com/deuill/grawkit/55cacf1c890c47f99a3e9c9dbd86a8fffe464568/tests/03-branch.svg" alt=""></th>
 	</tr>
 	<tr>
 		<th><pre><code>git branch test-merging
@@ -49,7 +49,7 @@ git checkout master
 git commit -m "Another master commit"
 
 git merge test-merging</code></pre></th>
-		<th><img src="https://rawgit.com/deuill/grawkit/master/tests/04-merge.svg" alt=""></th>
+		<th><img src="https://rawgit.com/deuill/grawkit/55cacf1c890c47f99a3e9c9dbd86a8fffe464568/tests/04-merge.svg" alt=""></th>
 	</tr>
 	<tr>
 		<th><pre><code>git commit -m "Commit on master"
@@ -75,7 +75,7 @@ git merge test-second
 
 git checkout test-third
 git commit</code></pre></th>
-		<th><img src="https://rawgit.com/deuill/grawkit/master/tests/05-multi-branch.svg" alt=""></th>
+		<th><img src="https://rawgit.com/deuill/grawkit/55cacf1c890c47f99a3e9c9dbd86a8fffe464568/tests/05-multi-branch.svg" alt=""></th>
 	</tr>
 	<tr>
 		<th><pre><code>git branch develop
@@ -102,7 +102,7 @@ git commit
 
 git checkout develop
 git merge feature/ZZ-704_take-it-to-the-limit</code></pre></th>
-		<th><img src="https://rawgit.com/deuill/grawkit/master/tests/06-feature-branch.svg" alt=""></th>
+		<th><img src="https://rawgit.com/deuill/grawkit/55cacf1c890c47f99a3e9c9dbd86a8fffe464568/tests/06-feature-branch.svg" alt=""></th>
 	</tr>
 </table>
 
