@@ -4,11 +4,12 @@
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 130 20">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 -10 0 -30">
 <style type="text/css"><![CDATA[
 .branch {
 	fill: none;
 	stroke-width: 10;
+	stroke-linecap: round;
 }
 .commit {
 	fill: #fff;
@@ -22,19 +23,11 @@
 }
 .label-text {
 	font-family: Inconsolata, Consolas, monospace;
-	font-size: 18px;
+	font-size: 14px;
 	fill: #fff;
 	stroke: none;
 }
 .branch-master {stroke: #002b36; fill: #002b36}
 ]]></style>
 
-<g class="branch-master">
-	<path class="branch" d="M0,0 L0,0" />
-	<circle class="commit" cx="0" cy="0" r="7.5" />
-	<g class="label-branch" transform="translate(50,0)">
-		<rect x="0" y="-15" width="70" height="25" rx="3" class="label-rect" />
-		<text x="10" y="2" class="label-text">master</text>
-	</g>
-</g>
 </svg>

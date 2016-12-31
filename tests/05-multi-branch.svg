@@ -13,6 +13,8 @@ git tag v.1.0.0
 git checkout test-first
 git commit
 
+git branch test-third
+
 git checkout test-second
 git commit
 git merge test-first
@@ -21,13 +23,17 @@ git tag v.2.0.0-rc1
 git checkout master
 git merge test-second
 
+git checkout test-third
+git commit
+
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 410 320">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 401 320">
 <style type="text/css"><![CDATA[
 .branch {
 	fill: none;
 	stroke-width: 10;
+	stroke-linecap: round;
 }
 .commit {
 	fill: #fff;
@@ -41,58 +47,69 @@ git merge test-second
 }
 .label-text {
 	font-family: Inconsolata, Consolas, monospace;
-	font-size: 18px;
+	font-size: 14px;
 	fill: #fff;
 	stroke: none;
 }
 .branch-master {stroke: #002b36; fill: #002b36}
 .branch-test-first {stroke: #268bd2; fill: #268bd2}
 .branch-test-second {stroke: #859900; fill: #859900}
+.branch-test-third {stroke: #cb4b16; fill: #cb4b16}
 ]]></style>
 <g class="merge">
+	<g class="branch-test-third">
+		<path class="branch" d="M50,100 C150,100 150,100 150,300" />
+	</g>
 	<g class="branch-test-second">
-		<path class="branch" d="M0,50 C100,50 100,50 100,200" />
-		<path class="branch" d="M0,300 C100,300 100,300 100,200" />
+		<path class="branch" d="M0,0 C100,0 100,0 100,150" />
+		<path class="branch" d="M0,250 C100,250 100,250 100,150" />
 	</g>
 	<g class="branch-test-first">
-		<path class="branch" d="M0,50 C50,50 50,50 50,150" />
-		<path class="branch" d="M100,250 C50,250 50,250 50,150" />
+		<path class="branch" d="M0,0 C50,0 50,0 50,100" />
+		<path class="branch" d="M100,200 C50,200 50,200 50,100" />
+	</g>
+</g>
+<g class="branch-test-third">
+	<path class="branch" d="M150,300 L150,300" />
+	<circle class="commit" cx="150" cy="300" r="7.5" />
+	<g class="label-branch" transform="translate(200,300)">
+		<rect x="0" y="-14" width="83" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" class="label-text">test-third</text>
 	</g>
 </g>
 <g class="branch-test-second">
-	<path class="branch" d="M100,200 L100,250" />
+	<path class="branch" d="M100,150 L100,200" />
+	<circle class="commit" cx="100" cy="150" r="7.5" />
 	<circle class="commit" cx="100" cy="200" r="7.5" />
-	<circle class="commit" cx="100" cy="250" r="7.5" />
-	<g class="label-tag" transform="translate(150,250)">
-		<rect x="0" y="-15" width="120" height="25" rx="3" class="label-rect" />
-		<text x="10" y="2" class="label-text">v.2.0.0-rc1</text>
+	<g class="label-tag" transform="translate(200,200)">
+		<rect x="0" y="-14" width="90" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" class="label-text">v.2.0.0-rc1</text>
 	</g>
-	<g class="label-branch" transform="translate(280,250)">
-		<rect x="0" y="-15" width="120" height="25" rx="3" class="label-rect" />
-		<text x="10" y="2" class="label-text">test-second</text>
+	<g class="label-branch" transform="translate(300,200)">
+		<rect x="0" y="-14" width="90" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" class="label-text">test-second</text>
 	</g>
 </g>
 <g class="branch-test-first">
-	<path class="branch" d="M50,150 L50,150" />
-	<circle class="commit" cx="50" cy="150" r="7.5" />
-	<g class="label-branch" transform="translate(150,150)">
-		<rect x="0" y="-15" width="110" height="25" rx="3" class="label-rect" />
-		<text x="10" y="2" class="label-text">test-first</text>
+	<path class="branch" d="M50,100 L50,100" />
+	<circle class="commit" cx="50" cy="100" r="7.5" />
+	<g class="label-branch" transform="translate(200,100)">
+		<rect x="0" y="-14" width="83" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" class="label-text">test-first</text>
 	</g>
 </g>
 <g class="branch-master">
-	<path class="branch" d="M0,0 L0,300" />
+	<path class="branch" d="M0,0 L0,250" />
 	<circle class="commit" cx="0" cy="0" r="7.5" />
 	<circle class="commit" cx="0" cy="50" r="7.5" />
-	<circle class="commit" cx="0" cy="100" r="7.5" />
-	<circle class="commit" cx="0" cy="300" r="7.5" />
-	<g class="label-tag" transform="translate(150,100)">
-		<rect x="0" y="-15" width="80" height="25" rx="3" class="label-rect" />
-		<text x="10" y="2" class="label-text">v.1.0.0</text>
+	<circle class="commit" cx="0" cy="250" r="7.5" />
+	<g class="label-tag" transform="translate(200,50)">
+		<rect x="0" y="-14" width="61" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" class="label-text">v.1.0.0</text>
 	</g>
-	<g class="label-branch" transform="translate(150,300)">
-		<rect x="0" y="-15" width="70" height="25" rx="3" class="label-rect" />
-		<text x="10" y="2" class="label-text">master</text>
+	<g class="label-branch" transform="translate(200,250)">
+		<rect x="0" y="-14" width="54" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" class="label-text">master</text>
 	</g>
 </g>
 </svg>

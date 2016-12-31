@@ -20,7 +20,7 @@ Grawkit has basic support for common `git` commands such as `git branch`, `git t
 	<tr>
 		<th><pre><code>git commit -m "Adding a new commit"
 git commit</code></pre></th>
-		<th><img src="https://rawgit.com/deuill/grawkit/master/tests/02-master.svg" alt="Master Branch"></th>
+		<th><img src="https://rawgit.com/deuill/grawkit/master/tests/02-master.svg" alt=""></th>
 	</tr>
 	<tr>
 		<th><pre><code>git commit -m "Commit on master"
@@ -34,13 +34,12 @@ git commit
 
 git checkout master
 git commit</code></pre></th>
-		<th><img src="https://rawgit.com/deuill/grawkit/master/tests/03-branch.svg" alt="Simple Branching"></th>
+		<th><img src="https://rawgit.com/deuill/grawkit/master/tests/03-branch.svg" alt=""></th>
 	</tr>
 	<tr>
-		<th><pre><code>
-git commit -m "Commit on master"
+		<th><pre><code>git branch test-merging
 
-git branch test-merging
+git commit -m "Commit on master"
 git commit -m "Still on master"
 
 git checkout test-merging
@@ -50,7 +49,7 @@ git checkout master
 git commit -m "Another master commit"
 
 git merge test-merging</code></pre></th>
-		<th><img src="https://rawgit.com/deuill/grawkit/master/tests/04-merge.svg" alt="Simple Merging"></th>
+		<th><img src="https://rawgit.com/deuill/grawkit/master/tests/04-merge.svg" alt=""></th>
 	</tr>
 	<tr>
 		<th><pre><code>git commit -m "Commit on master"
@@ -64,14 +63,46 @@ git tag v.1.0.0
 git checkout test-first
 git commit
 
+git branch test-third
+
 git checkout test-second
 git commit
 git merge test-first
 git tag v.2.0.0-rc1
 
 git checkout master
-git merge test-second</code></pre></th>
-		<th><img src="https://rawgit.com/deuill/grawkit/master/tests/05-multi-branch.svg" alt="Merging and Tagging Multiple Branches"></th>
+git merge test-second
+
+git checkout test-third
+git commit</code></pre></th>
+		<th><img src="https://rawgit.com/deuill/grawkit/master/tests/05-multi-branch.svg" alt=""></th>
+	</tr>
+	<tr>
+		<th><pre><code>git branch develop
+git checkout develop
+git commit
+
+git branch feature/XYZ-12_fix-foo
+git checkout feature/XYZ-12_fix-foo
+git commit
+git commit
+
+git checkout develop
+git branch feature/ZZ-704_take-it-to-the-limit
+git checkout feature/ZZ-704_take-it-to-the-limit
+git commit
+
+git checkout develop
+git merge feature/XYZ-12_fix-foo
+
+git branch feature/ABC-66_make-bar
+git checkout feature/ABC-66_make-bar
+git commit
+git commit
+
+git checkout develop
+git merge feature/ZZ-704_take-it-to-the-limit</code></pre></th>
+		<th><img src="https://rawgit.com/deuill/grawkit/master/tests/06-feature-branch.svg" alt=""></th>
 	</tr>
 </table>
 

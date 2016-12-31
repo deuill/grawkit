@@ -20,17 +20,25 @@
 function addbranch(name) {
 	branches[len["branches"],"name"] = name
 	branches[len["branches"],"refs"] = ""
-	branches[len["branches"],"merges"] = state["branch"] "|" state["HEAD"]
 	branches[len["branches"],"tags"] = ""
+
+	# Branches created before the first commit is established extend to the
+	# beginning of time.
+	if (state["HEAD"] != "") {
+		branches[len["branches"],"merges"] = state["branch"] "|" state["HEAD"]
+	} else {
+		branches[len["branches"],"merges"] = len["branches"] "|0"
+	}
 
 	len["branches"] += 1
 }
 
-# > Function `addcommit` adds a new commit, with a specific message, to the
-# > internal list of commits to render.
-function addcommit(message) {
+# > Function `addcommit` adds a new commit, with a specific type and message,
+# > to the internal list of commits to render.
+function addcommit(type, message) {
 	# Add commit information.
-	commits[len["commits"],"message"] = msg
+	commits[len["commits"],"type"]    = type
+	commits[len["commits"],"message"] = message
 
 	# Update commit references.
 	if (branches[state["branch"],"refs"] == "") {
@@ -41,6 +49,12 @@ function addcommit(message) {
 
 	state["HEAD"] = len["commits"]
 	len["commits"] += 1
+}
+
+# > Function `normalize` removes invalid characters and makes string lower-case.
+function normalize(text) {
+	text = gensub("[/_. ]", "-", "g", tolower(text))
+	return text
 }
 
 # > Function `branch` renders pre-defined branch under a specific name to its
@@ -56,7 +70,7 @@ function branch(idx, _, buf, tmp, refs, tags, t, i, hspc, vspc) {
 	hspc = idx * style["branch/spacing"]
 
 	# Print branch root element.
-	buf = sprintf(svg["g"], "branch-" branches[idx,"name"])
+	buf = "\n" sprintf(svg["g"], "branch-" normalize(branches[idx,"name"]))
 
 	# Add path for branch.
 	tmp = "M" hspc "," refs[1] * style["commit/spacing"]
@@ -89,9 +103,11 @@ function branch(idx, _, buf, tmp, refs, tags, t, i, hspc, vspc) {
 # > Function `label` adds a sidebar label at commit index, with a specific class
 # > and label name. Multiple labels for the same index will be placed side-by-side.
 function label(idx, class, name, _, buf, w, h, hspc, vspc) {
-	# Calculate width and height for label rectangle.
-	w = (style["label/spacing"] * length(name)) + style["label/spacing"]
-	h = style["label/spacing"] * 2.5
+	# Calculate width and height for label rectangle. Pitch size is set to 0.525
+	# here, which is approximately right for 'Inconsolata', but may vary for other
+	# fonts, as fixed width fonts are usually twice as tall as they are wide.
+	w = ((style["label/font-size"] * 0.525) * length(name)) + style["label/spacing"]
+	h = style["label/font-size"] + style["label/spacing"]
 
 	# Calculate label offsets.
 	hspc = (len["branches"] * style["branch/spacing"]) + label_offset[idx]
@@ -102,8 +118,8 @@ function label(idx, class, name, _, buf, w, h, hspc, vspc) {
 
 	# Draw label elements.
 	buf = buf "\n\t" sprintf(svg["gg"], "label-" class, hspc, vspc)
-	buf = buf "\n\t\t" sprintf(svg["rect"], 0, style["label/spacing"] * -1.5, w, h, style["label/round"])
-	buf = buf "\n\t\t" sprintf(svg["text"], style["label/spacing"], style["label/spacing"] / 4, name)
+	buf = buf "\n\t\t" sprintf(svg["rect"], 0, style["label/font-size"] * -1, w, h, style["label/round"])
+	buf = buf "\n\t\t" sprintf(svg["text"], style["label/spacing"] / 2, style["label/spacing"] / 4, name)
 	buf = buf "\n\t" svg["/g"]
 
 	return buf
@@ -121,10 +137,11 @@ function merge(idx, _, buf, tmp, refs, fields, m, i, hspc) {
 	hspc = idx * style["branch/spacing"]
 
 	# Print branch root element.
-	buf = "\n\t" sprintf(svg["g"], "branch-" branches[idx,"name"])
+	buf = "\n\t" sprintf(svg["g"], normalize("branch-" branches[idx,"name"]))
 
 	# Add merge paths for branch, if any.
 	split(branches[idx,"merges"], fields, ",")
+
 	for (i in fields) {
 		split(fields[i], m, "|")
 
@@ -150,15 +167,16 @@ function merge(idx, _, buf, tmp, refs, fields, m, i, hspc) {
 
 BEGIN {
 	# Errors.
-	error["branch/no-name"]     = "Empty name for `git branch`, line %d\n"
-	error["branch/duplicate"]   = "Unable to create duplicate branch '%s', line %d\n"
+	error["branch/no-name"]   = "Empty name for `git branch`, line %d\n"
+	error["branch/duplicate"] = "Unable to create duplicate branch '%s', line %d\n"
+
 	error["checkout/no-branch"] = "No branch with name '%s', line %d\n"
+	error["checkout/no-name"]   = "Empty name for `git checkout`, line %d\n"
 
-	error["checkout/no-name"] = "Empty name for `git checkout`, line %d\n"
-	error["merge/no-name"]    = "Empty name for `git merge`, line %d\n"
-	error["label/no-name"]      = "Empty name for `git tag`, line %d\n"
+	error["merge/no-name"] = "Empty name for `git merge`, line %d\n"
+	error["label/no-name"] = "Empty name for `git tag`, line %d\n"
 
-	# rule matching.
+	# Rule matching.
 	rule["commit"]         = "^git commit"
 	rule["commit/message"] = "(--message|-m)[ ]+['|\"]([^'\"]+)['|\"]"
 
@@ -189,7 +207,7 @@ BEGIN {
 	style["label/fill"]      = "#333"
 	style["label/text"]      = "#fff"
 	style["label/font"]      = "Inconsolata, Consolas, monospace"
-	style["label/font-size"] = "18px"
+	style["label/font-size"] = "14"
 
 	# Color scheme, based on `base16-solarized-dark`
 	style["pallete"] = "#002b36,#268bd2,#859900,#cb4b16,#2aa198,#dc322f,#d33682,#6c71c4,#b58900"
@@ -207,18 +225,19 @@ BEGIN {
 
 	# Branch definitions.
 	branches[0,"name"] = "master"
-	branches[0,"refs"] = 0
+	branches[0,"refs"] = ""
 	branches[0,"merges"] = ""
 	branches[0,"tags"]   = ""
 	len["branches"] = 1
 
 	# Commit definitions.
-	commits[0,"message"] = "Initial commit"
-	len["commits"] = 1
+	commits[0,"type"]    = ""
+	commits[0,"message"] = ""
+	len["commits"] = 0
 
 	# Tracks the state across calls.
 	state["branch"] = 0
-	state["HEAD"]   = 0
+	state["HEAD"]   = ""
 }
 
 # Rule Definitions
@@ -234,7 +253,7 @@ $0 ~ rule["commit"] {
 	match($0, rule["commit/message"], m)
 
 	# Add new commit.
-	addcommit((2 in m) ? m[2] : "Empty message")
+	addcommit("commit", (2 in m) ? m[2] : "Empty message")
 	next
 }
 
@@ -285,6 +304,10 @@ $0 ~ rule["checkout"] {
 
 	# Set internal state.
 	state["branch"] = i
+
+	split(branches[i,"refs"], refs, ",")
+	state["HEAD"] = refs[length(refs)]
+
 	next
 }
 
@@ -312,7 +335,7 @@ $0 ~ rule["merge"] {
 	}
 
 	# Add a merge commit to current branch.
-	addcommit("Merge commit")
+	addcommit("merge", "Merge commit")
 
 	# Add merge reference to target branch.
 	if (branches[i,"merges"] == "") {
@@ -350,7 +373,7 @@ $0 ~ rule["tag"] {
 # internal state, as defined in the command-line provided.
 
 END {
-	# Pre-build SVG body.
+	w = 0
 	body = ""
 
 	# Print merge paths for branches.
@@ -365,24 +388,27 @@ END {
 
 	# Print each branch and corresponding commits in turn.
 	for (i = len["branches"] - 1; i >= 0; i--) {
-		body = body "\n" branch(i)
+		body = body branch(i)
 	}
 
-	# Calculate SVG canvas dimensions.
-	h = (style["commit/spacing"] * (len["commits"] - 1)) + (style["commit/stroke-width"] * 4)
-	xy = style["branch/stroke-width"] * -1
+	# Calculate SVG canvas size, removing `master` branch from X offset if it
+	# contains no commits.
+	x = style["branch/stroke-width"] * -1
+	x += (branches[0,"refs"] == "") ? style["branch/spacing"] : 0
+	y = style["branch/stroke-width"] * -1
 
 	# Calculate canvas width from largest combined label offset.
-	w = 0
-
 	for (i in label_offset) {
 		w = (label_offset[i] > w) ? label_offset[i] : w;
 	}
 
 	w += style["branch/spacing"] * len["branches"]
+	w -= (branches[0,"refs"] == "") ? style["branch/spacing"] : 0
+
+	h = (style["commit/spacing"] * (len["commits"] - 1)) + (style["commit/stroke-width"] * 4)
 
 	# Print SVG header.
-	printf svg["svg"], xy, xy, w, h
+	printf svg["svg"], x, y, w, h
 	printf "\n"
 
 	# Print inline style definitions.
@@ -390,6 +416,7 @@ END {
 	print ".branch {"
 	print "\tfill: " style["branch/fill"] ";"
 	print "\tstroke-width: " style["branch/stroke-width"] ";"
+	print "\tstroke-linecap: round;"
 	print "}"
 	print ".commit {"
 	print "\tfill: " style["commit/fill"] ";"
@@ -403,7 +430,7 @@ END {
 	print "}"
 	print ".label-text {"
 	print "\tfont-family: " style["label/font"] ";"
-	print "\tfont-size: " style["label/font-size"] ";"
+	print "\tfont-size: " style["label/font-size"] "px;"
 	print "\tfill: " style["label/text"] ";"
 	print "\tstroke: none;"
 	print "}"
@@ -412,7 +439,8 @@ END {
 
 	# Print color scheme definitions for branches.
 	for (i = 0; i < len["branches"]; i++) {
-		print ".branch-" branches[i,"name"] " {stroke: " pallete[i + 1] "; fill: " pallete[i + 1] "}"
+		printf ".branch-" normalize(branches[i,"name"]) " {"
+		printf "stroke: " pallete[i + 1] "; fill: " pallete[i + 1] "}\n"
 	}
 
 	print "]]></style>"

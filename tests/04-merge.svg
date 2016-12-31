@@ -1,11 +1,10 @@
 <!--
 
-# Test the scenario of a branch merging from and
-# back to master.
-
-git commit -m "Commit on master"
+# Test the scenario of a branch merging back to master.
 
 git branch test-merging
+
+git commit -m "Commit on master"
 git commit -m "Still on master"
 
 git checkout test-merging
@@ -18,11 +17,12 @@ git merge test-merging
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 240 270">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 208 220">
 <style type="text/css"><![CDATA[
 .branch {
 	fill: none;
 	stroke-width: 10;
+	stroke-linecap: round;
 }
 .commit {
 	fill: #fff;
@@ -36,7 +36,7 @@ git merge test-merging
 }
 .label-text {
 	font-family: Inconsolata, Consolas, monospace;
-	font-size: 18px;
+	font-size: 14px;
 	fill: #fff;
 	stroke: none;
 }
@@ -45,28 +45,27 @@ git merge test-merging
 ]]></style>
 <g class="merge">
 	<g class="branch-test-merging">
-		<path class="branch" d="M0,50 C50,50 50,50 50,150" />
-		<path class="branch" d="M0,250 C50,250 50,250 50,150" />
+		<path class="branch" d="M50,0 C50,0 50,0 50,100" />
+		<path class="branch" d="M0,200 C50,200 50,200 50,100" />
 	</g>
 </g>
 <g class="branch-test-merging">
-	<path class="branch" d="M50,150 L50,150" />
-	<circle class="commit" cx="50" cy="150" r="7.5" />
-	<g class="label-branch" transform="translate(100,150)">
-		<rect x="0" y="-15" width="130" height="25" rx="3" class="label-rect" />
-		<text x="10" y="2" class="label-text">test-merging</text>
+	<path class="branch" d="M50,100 L50,100" />
+	<circle class="commit" cx="50" cy="100" r="7.5" />
+	<g class="label-branch" transform="translate(100,100)">
+		<rect x="0" y="-14" width="98" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" class="label-text">test-merging</text>
 	</g>
 </g>
 <g class="branch-master">
-	<path class="branch" d="M0,0 L0,250" />
+	<path class="branch" d="M0,0 L0,200" />
 	<circle class="commit" cx="0" cy="0" r="7.5" />
 	<circle class="commit" cx="0" cy="50" r="7.5" />
-	<circle class="commit" cx="0" cy="100" r="7.5" />
+	<circle class="commit" cx="0" cy="150" r="7.5" />
 	<circle class="commit" cx="0" cy="200" r="7.5" />
-	<circle class="commit" cx="0" cy="250" r="7.5" />
-	<g class="label-branch" transform="translate(100,250)">
-		<rect x="0" y="-15" width="70" height="25" rx="3" class="label-rect" />
-		<text x="10" y="2" class="label-text">master</text>
+	<g class="label-branch" transform="translate(100,200)">
+		<rect x="0" y="-14" width="54" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" class="label-text">master</text>
 	</g>
 </g>
 </svg>
