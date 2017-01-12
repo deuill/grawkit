@@ -1,6 +1,8 @@
-# Grawkit - The Awksome Git Graph Generator
+# Grawkit - The Awksome Git Graph Generator [![MIT License][license-svg]][license-url]
 
 Grawkit is a tool that helps build SVG graphs from git command-line descriptions, and is built in Awk.
+
+This tool was created in support of the ["Orthogonal Git Workflow"][orthogonal-git] post. Yes, this took way longer to write than the post itself.
 
 ## Testing & Documentation
 
@@ -110,5 +112,6 @@ git merge feature/ZZ-704_take-it-to-the-limit</code></pre></th>
 
 All code in this repository is covered by the terms of the MIT License, the full text of which can be found in the LICENSE file.
 
+[orthogonal-git]: https://deuill.org/post/orthogonal-git-workflow/
 [license-url]: https://github.com/deuill/grawkit/blob/master/LICENSE
 [license-svg]: https://img.shields.io/badge/license-MIT-blue.svg
