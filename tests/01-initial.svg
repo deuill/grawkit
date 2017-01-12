@@ -4,7 +4,7 @@
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 -10 0 -30">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 -10 0 20">
 <style type="text/css"><![CDATA[
 .branch {
 	fill: none;
@@ -29,5 +29,9 @@
 }
 .branch-master {stroke: #002b36; fill: #002b36}
 ]]></style>
-
+<g class="merge">
+	<g class="branch-master">
+		<path class="branch" d="M0,0 C0,0 0,0 0,0" />
+	</g>
+</g>
 </svg>

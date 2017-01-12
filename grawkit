@@ -103,10 +103,10 @@ function branch(idx, _, buf, tmp, refs, tags, t, i, hspc, vspc) {
 # > Function `label` adds a sidebar label at commit index, with a specific class
 # > and label name. Multiple labels for the same index will be placed side-by-side.
 function label(idx, class, name, _, buf, w, h, hspc, vspc) {
-	# Calculate width and height for label rectangle. Pitch size is set to 0.525
+	# Calculate width and height for label rectangle. Pitch size is set to 0.5
 	# here, which is approximately right for 'Inconsolata', but may vary for other
 	# fonts, as fixed width fonts are usually twice as tall as they are wide.
-	w = ((style["label/font-size"] * 0.525) * length(name)) + style["label/spacing"]
+	w = ((style["label/font-size"] * 0.5) * length(name)) + style["label/spacing"]
 	h = style["label/font-size"] + style["label/spacing"]
 
 	# Calculate label offsets.
@@ -226,14 +226,14 @@ BEGIN {
 	# Branch definitions.
 	branches[0,"name"] = "master"
 	branches[0,"refs"] = ""
-	branches[0,"merges"] = ""
+	branches[0,"merges"] = "0|0"
 	branches[0,"tags"]   = ""
 	len["branches"] = 1
 
 	# Commit definitions.
 	commits[0,"type"]    = ""
 	commits[0,"message"] = ""
-	len["commits"] = 0
+	len["commits"] = 1
 
 	# Tracks the state across calls.
 	state["branch"] = 0

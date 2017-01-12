@@ -5,7 +5,6 @@
 git branch test-merging
 
 git commit -m "Commit on master"
-git commit -m "Still on master"
 
 git checkout test-merging
 git commit -m 'A sample commit'
@@ -17,7 +16,7 @@ git merge test-merging
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 208 220">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 204 220">
 <style type="text/css"><![CDATA[
 .branch {
 	fill: none;
@@ -48,23 +47,25 @@ git merge test-merging
 		<path class="branch" d="M50,0 C50,0 50,0 50,100" />
 		<path class="branch" d="M0,200 C50,200 50,200 50,100" />
 	</g>
+	<g class="branch-master">
+		<path class="branch" d="M0,0 C0,0 0,0 0,50" />
+	</g>
 </g>
 <g class="branch-test-merging">
 	<path class="branch" d="M50,100 L50,100" />
 	<circle class="commit" cx="50" cy="100" r="7.5" />
 	<g class="label-branch" transform="translate(100,100)">
-		<rect x="0" y="-14" width="98" height="24" rx="3" class="label-rect" />
+		<rect x="0" y="-14" width="94" height="24" rx="3" class="label-rect" />
 		<text x="5" y="2" class="label-text">test-merging</text>
 	</g>
 </g>
 <g class="branch-master">
-	<path class="branch" d="M0,0 L0,200" />
-	<circle class="commit" cx="0" cy="0" r="7.5" />
+	<path class="branch" d="M0,50 L0,200" />
 	<circle class="commit" cx="0" cy="50" r="7.5" />
 	<circle class="commit" cx="0" cy="150" r="7.5" />
 	<circle class="commit" cx="0" cy="200" r="7.5" />
 	<g class="label-branch" transform="translate(100,200)">
-		<rect x="0" y="-14" width="54" height="24" rx="3" class="label-rect" />
+		<rect x="0" y="-14" width="52" height="24" rx="3" class="label-rect" />
 		<text x="5" y="2" class="label-text">master</text>
 	</g>
 </g>

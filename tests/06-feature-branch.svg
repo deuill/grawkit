@@ -27,7 +27,7 @@ git merge feature/ZZ-704_take-it-to-the-limit
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 -10 477 370">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 -10 465 420">
 <style type="text/css"><![CDATA[
 .branch {
 	fill: none;
@@ -58,53 +58,56 @@ git merge feature/ZZ-704_take-it-to-the-limit
 ]]></style>
 <g class="merge">
 	<g class="branch-feature-abc-66-make-bar">
-		<path class="branch" d="M50,200 C200,200 200,200 200,250" />
+		<path class="branch" d="M50,250 C200,250 200,250 200,300" />
 	</g>
 	<g class="branch-feature-zz-704-take-it-to-the-limit">
-		<path class="branch" d="M50,0 C150,0 150,0 150,150" />
-		<path class="branch" d="M50,350 C150,350 150,350 150,150" />
+		<path class="branch" d="M50,50 C150,50 150,50 150,200" />
+		<path class="branch" d="M50,400 C150,400 150,400 150,200" />
 	</g>
 	<g class="branch-feature-xyz-12-fix-foo">
-		<path class="branch" d="M50,0 C100,0 100,0 100,50" />
-		<path class="branch" d="M50,200 C100,200 100,200 100,50" />
+		<path class="branch" d="M50,50 C100,50 100,50 100,100" />
+		<path class="branch" d="M50,250 C100,250 100,250 100,100" />
 	</g>
 	<g class="branch-develop">
-		<path class="branch" d="M50,0 C50,0 50,0 50,0" />
+		<path class="branch" d="M50,0 C50,0 50,0 50,50" />
+	</g>
+	<g class="branch-master">
+		<path class="branch" d="M0,0 C0,0 0,0 0,0" />
 	</g>
 </g>
 <g class="branch-feature-abc-66-make-bar">
-	<path class="branch" d="M200,250 L200,300" />
-	<circle class="commit" cx="200" cy="250" r="7.5" />
+	<path class="branch" d="M200,300 L200,350" />
 	<circle class="commit" cx="200" cy="300" r="7.5" />
-	<g class="label-branch" transform="translate(250,300)">
-		<rect x="0" y="-14" width="179" height="24" rx="3" class="label-rect" />
+	<circle class="commit" cx="200" cy="350" r="7.5" />
+	<g class="label-branch" transform="translate(250,350)">
+		<rect x="0" y="-14" width="171" height="24" rx="3" class="label-rect" />
 		<text x="5" y="2" class="label-text">feature/ABC-66_make-bar</text>
 	</g>
 </g>
 <g class="branch-feature-zz-704-take-it-to-the-limit">
-	<path class="branch" d="M150,150 L150,150" />
-	<circle class="commit" cx="150" cy="150" r="7.5" />
-	<g class="label-branch" transform="translate(250,150)">
-		<rect x="0" y="-14" width="267" height="24" rx="3" class="label-rect" />
+	<path class="branch" d="M150,200 L150,200" />
+	<circle class="commit" cx="150" cy="200" r="7.5" />
+	<g class="label-branch" transform="translate(250,200)">
+		<rect x="0" y="-14" width="255" height="24" rx="3" class="label-rect" />
 		<text x="5" y="2" class="label-text">feature/ZZ-704_take-it-to-the-limit</text>
 	</g>
 </g>
 <g class="branch-feature-xyz-12-fix-foo">
-	<path class="branch" d="M100,50 L100,100" />
-	<circle class="commit" cx="100" cy="50" r="7.5" />
+	<path class="branch" d="M100,100 L100,150" />
 	<circle class="commit" cx="100" cy="100" r="7.5" />
-	<g class="label-branch" transform="translate(250,100)">
-		<rect x="0" y="-14" width="171" height="24" rx="3" class="label-rect" />
+	<circle class="commit" cx="100" cy="150" r="7.5" />
+	<g class="label-branch" transform="translate(250,150)">
+		<rect x="0" y="-14" width="164" height="24" rx="3" class="label-rect" />
 		<text x="5" y="2" class="label-text">feature/XYZ-12_fix-foo</text>
 	</g>
 </g>
 <g class="branch-develop">
-	<path class="branch" d="M50,0 L50,350" />
-	<circle class="commit" cx="50" cy="0" r="7.5" />
-	<circle class="commit" cx="50" cy="200" r="7.5" />
-	<circle class="commit" cx="50" cy="350" r="7.5" />
-	<g class="label-branch" transform="translate(250,350)">
-		<rect x="0" y="-14" width="61" height="24" rx="3" class="label-rect" />
+	<path class="branch" d="M50,50 L50,400" />
+	<circle class="commit" cx="50" cy="50" r="7.5" />
+	<circle class="commit" cx="50" cy="250" r="7.5" />
+	<circle class="commit" cx="50" cy="400" r="7.5" />
+	<g class="label-branch" transform="translate(250,400)">
+		<rect x="0" y="-14" width="59" height="24" rx="3" class="label-rect" />
 		<text x="5" y="2" class="label-text">develop</text>
 	</g>
 </g>

@@ -18,7 +18,7 @@ git commit
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 193 220">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 190 270">
 <style type="text/css"><![CDATA[
 .branch {
 	fill: none;
@@ -46,25 +46,28 @@ git commit
 ]]></style>
 <g class="merge">
 	<g class="branch-test-stuff">
-		<path class="branch" d="M0,50 C50,50 50,50 50,100" />
+		<path class="branch" d="M0,100 C50,100 50,100 50,150" />
+	</g>
+	<g class="branch-master">
+		<path class="branch" d="M0,0 C0,0 0,0 0,50" />
 	</g>
 </g>
 <g class="branch-test-stuff">
-	<path class="branch" d="M50,100 L50,150" />
-	<circle class="commit" cx="50" cy="100" r="7.5" />
+	<path class="branch" d="M50,150 L50,200" />
 	<circle class="commit" cx="50" cy="150" r="7.5" />
-	<g class="label-branch" transform="translate(100,150)">
-		<rect x="0" y="-14" width="83" height="24" rx="3" class="label-rect" />
+	<circle class="commit" cx="50" cy="200" r="7.5" />
+	<g class="label-branch" transform="translate(100,200)">
+		<rect x="0" y="-14" width="80" height="24" rx="3" class="label-rect" />
 		<text x="5" y="2" class="label-text">test-stuff</text>
 	</g>
 </g>
 <g class="branch-master">
-	<path class="branch" d="M0,0 L0,200" />
-	<circle class="commit" cx="0" cy="0" r="7.5" />
+	<path class="branch" d="M0,50 L0,250" />
 	<circle class="commit" cx="0" cy="50" r="7.5" />
-	<circle class="commit" cx="0" cy="200" r="7.5" />
-	<g class="label-branch" transform="translate(100,200)">
-		<rect x="0" y="-14" width="54" height="24" rx="3" class="label-rect" />
+	<circle class="commit" cx="0" cy="100" r="7.5" />
+	<circle class="commit" cx="0" cy="250" r="7.5" />
+	<g class="label-branch" transform="translate(100,250)">
+		<rect x="0" y="-14" width="52" height="24" rx="3" class="label-rect" />
 		<text x="5" y="2" class="label-text">master</text>
 	</g>
 </g>
