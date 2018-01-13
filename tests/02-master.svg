@@ -43,7 +43,7 @@ git commit
 	<circle class="commit" cx="0" cy="100" r="7.5" />
 	<g class="label-branch" transform="translate(50,100)">
 		<rect x="0" y="-14" width="52" height="24" rx="3" class="label-rect" />
-		<text x="5" y="2" class="label-text">master</text>
+		<text x="5" y="2" textLength="42" class="label-text">master</text>
 	</g>
 </g>
 </svg>

@@ -81,7 +81,7 @@ git merge feature/ZZ-704_take-it-to-the-limit
 	<circle class="commit" cx="200" cy="350" r="7.5" />
 	<g class="label-branch" transform="translate(250,350)">
 		<rect x="0" y="-14" width="171" height="24" rx="3" class="label-rect" />
-		<text x="5" y="2" class="label-text">feature/ABC-66_make-bar</text>
+		<text x="5" y="2" textLength="161" class="label-text">feature/ABC-66_make-bar</text>
 	</g>
 </g>
 <g class="branch-feature-zz-704-take-it-to-the-limit">
@@ -89,7 +89,7 @@ git merge feature/ZZ-704_take-it-to-the-limit
 	<circle class="commit" cx="150" cy="200" r="7.5" />
 	<g class="label-branch" transform="translate(250,200)">
 		<rect x="0" y="-14" width="255" height="24" rx="3" class="label-rect" />
-		<text x="5" y="2" class="label-text">feature/ZZ-704_take-it-to-the-limit</text>
+		<text x="5" y="2" textLength="245" class="label-text">feature/ZZ-704_take-it-to-the-limit</text>
 	</g>
 </g>
 <g class="branch-feature-xyz-12-fix-foo">
@@ -98,7 +98,7 @@ git merge feature/ZZ-704_take-it-to-the-limit
 	<circle class="commit" cx="100" cy="150" r="7.5" />
 	<g class="label-branch" transform="translate(250,150)">
 		<rect x="0" y="-14" width="164" height="24" rx="3" class="label-rect" />
-		<text x="5" y="2" class="label-text">feature/XYZ-12_fix-foo</text>
+		<text x="5" y="2" textLength="154" class="label-text">feature/XYZ-12_fix-foo</text>
 	</g>
 </g>
 <g class="branch-develop">
@@ -108,7 +108,7 @@ git merge feature/ZZ-704_take-it-to-the-limit
 	<circle class="commit" cx="50" cy="400" r="7.5" />
 	<g class="label-branch" transform="translate(250,400)">
 		<rect x="0" y="-14" width="59" height="24" rx="3" class="label-rect" />
-		<text x="5" y="2" class="label-text">develop</text>
+		<text x="5" y="2" textLength="49" class="label-text">develop</text>
 	</g>
 </g>
 </svg>

@@ -15,9 +15,9 @@
 # This section contains global helper functions, used across different rules, as
 # defined in the next section below.
 
-# > Function `addbranch` adds a new, empty branch to the internal list of branches
+# > Function `add_branch` adds a new, empty branch to the internal list of branches
 # > to render.
-function addbranch(name) {
+function add_branch(name) {
 	branches[len["branches"],"name"] = name
 	branches[len["branches"],"refs"] = ""
 	branches[len["branches"],"tags"] = ""
@@ -33,9 +33,9 @@ function addbranch(name) {
 	len["branches"] += 1
 }
 
-# > Function `addcommit` adds a new commit, with a specific type and message,
+# > Function `add_commit` adds a new commit, with a specific type and message,
 # > to the internal list of commits to render.
-function addcommit(type, message) {
+function add_commit(type, message) {
 	# Add commit information.
 	commits[len["commits"],"type"]    = type
 	commits[len["commits"],"message"] = message
@@ -57,9 +57,9 @@ function normalize(text) {
 	return text
 }
 
-# > Function `branch` renders pre-defined branch under a specific name to its
-# > SVG representation.
-function branch(idx, _, buf, tmp, refs, tags, t, i, hspc, vspc) {
+# > Function `render_branch` renders pre-defined branch under a specific name
+# > to its SVG representation.
+function render_branch(idx, _, buf, tmp, refs, tags, t, i, hspc, vspc) {
 	# Do not render branch with no commits.
 	if (branches[idx,"refs"] == "") {
 		return
@@ -91,22 +91,25 @@ function branch(idx, _, buf, tmp, refs, tags, t, i, hspc, vspc) {
 	split(branches[idx,"tags"], tags, ",")
 	for (i in tags) {
 		split(tags[i], t, "|")
-		buf = buf label(t[1], t[2], t[3])
+		buf = buf render_label(t[1], t[2], t[3])
 	}
 
 	# Add branch name as label on last commit.
-	buf = buf label(refs[length(refs)], "branch", branches[idx,"name"])
+	buf = buf render_label(refs[length(refs)], "branch", branches[idx,"name"])
 
 	return buf "\n" svg["/g"]
 }
 
-# > Function `label` adds a sidebar label at commit index, with a specific class
-# > and label name. Multiple labels for the same index will be placed side-by-side.
-function label(idx, class, name, _, buf, w, h, hspc, vspc) {
-	# Calculate width and height for label rectangle. Pitch size is set to 0.5
-	# here, which is approximately right for 'Inconsolata', but may vary for other
-	# fonts, as fixed width fonts are usually twice as tall as they are wide.
-	w = ((style["label/font-size"] * 0.5) * length(name)) + style["label/spacing"]
+# > Function `render_label` adds a sidebar label at commit index, with a specific
+# > class and label name. Multiple labels for the same index will be placed
+# > side-by-side.
+function render_label(idx, class, name, _, buf, tw, w, h, hspc, vspc) {
+	# Set specific length for text. Pitch size is approximately right for most fixed-width fonts,
+	# which are usually twice as tall as they are wide, but may vary for other fonts.
+	tw = (style["label/font-size"] * 0.5) * length(name)
+
+	# Calculate width and height for label rectangle.
+	w = tw + style["label/spacing"]
 	h = style["label/font-size"] + style["label/spacing"]
 
 	# Calculate label offsets.
@@ -119,14 +122,14 @@ function label(idx, class, name, _, buf, w, h, hspc, vspc) {
 	# Draw label elements.
 	buf = buf "\n\t" sprintf(svg["gg"], "label-" class, hspc, vspc)
 	buf = buf "\n\t\t" sprintf(svg["rect"], 0, style["label/font-size"] * -1, w, h, style["label/round"])
-	buf = buf "\n\t\t" sprintf(svg["text"], style["label/spacing"] / 2, style["label/spacing"] / 4, name)
+	buf = buf "\n\t\t" sprintf(svg["text"], style["label/spacing"] / 2, style["label/spacing"] / 4, tw, name)
 	buf = buf "\n\t" svg["/g"]
 
 	return buf
 }
 
-# > Function `merge` renders merge paths for a branch pointed to by `idx`.
-function merge(idx, _, buf, tmp, refs, fields, m, i, hspc) {
+# > Function `render_merge` renders merge paths for a branch pointed to by `idx`.
+function render_merge(idx, _, buf, tmp, refs, fields, m, i, hspc) {
 	# Do not render merge paths for branch with no commits.
 	if (branches[idx,"merges"] == "") {
 		return
@@ -221,7 +224,7 @@ BEGIN {
 	svg["path"]   = "<path class=\"branch\" d=\"%s\" />"
 	svg["circle"] = "<circle class=\"commit\" cx=\"%d\" cy=\"%d\" r=\"%s\" />"
 	svg["rect"]   = "<rect x=\"%d\" y=\"%d\" width=\"%d\" height=\"%d\" rx=\"%d\" class=\"label-rect\" />"
-	svg["text"]   = "<text x=\"%d\" y=\"%d\" class=\"label-text\">%s</text>"
+	svg["text"]   = "<text x=\"%d\" y=\"%d\" textLength=\"%d\" class=\"label-text\">%s</text>"
 
 	# Branch definitions.
 	branches[0,"name"] = "master"
@@ -253,7 +256,7 @@ $0 ~ rule["commit"] {
 	match($0, rule["commit/message"], m)
 
 	# Add new commit.
-	addcommit("commit", (2 in m) ? m[2] : "Empty message")
+	add_commit("commit", (2 in m) ? m[2] : "Empty message")
 	next
 }
 
@@ -275,7 +278,7 @@ $0 ~ rule["branch"] {
 	}
 
 	# Add empty branch as a placeholder.
-	addbranch(n[1])
+	add_branch(n[1])
 	next
 }
 
@@ -335,7 +338,7 @@ $0 ~ rule["merge"] {
 	}
 
 	# Add a merge commit to current branch.
-	addcommit("merge", "Merge commit")
+	add_commit("merge", "Merge commit")
 
 	# Add merge reference to target branch.
 	if (branches[i,"merges"] == "") {
@@ -378,7 +381,7 @@ END {
 
 	# Print merge paths for branches.
 	for (i = len["branches"] - 1; i >= 0; i--) {
-		body = body merge(i)
+		body = body render_merge(i)
 	}
 
 	if (body != "") {
@@ -388,7 +391,7 @@ END {
 
 	# Print each branch and corresponding commits in turn.
 	for (i = len["branches"] - 1; i >= 0; i--) {
-		body = body branch(i)
+		body = body render_branch(i)
 	}
 
 	# Calculate SVG canvas size, removing `master` branch from X offset if it

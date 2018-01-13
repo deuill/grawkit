@@ -58,7 +58,7 @@ git commit
 	<circle class="commit" cx="50" cy="200" r="7.5" />
 	<g class="label-branch" transform="translate(100,200)">
 		<rect x="0" y="-14" width="80" height="24" rx="3" class="label-rect" />
-		<text x="5" y="2" class="label-text">test-stuff</text>
+		<text x="5" y="2" textLength="70" class="label-text">test-stuff</text>
 	</g>
 </g>
 <g class="branch-master">
@@ -68,7 +68,7 @@ git commit
 	<circle class="commit" cx="0" cy="250" r="7.5" />
 	<g class="label-branch" transform="translate(100,250)">
 		<rect x="0" y="-14" width="52" height="24" rx="3" class="label-rect" />
-		<text x="5" y="2" class="label-text">master</text>
+		<text x="5" y="2" textLength="42" class="label-text">master</text>
 	</g>
 </g>
 </svg>

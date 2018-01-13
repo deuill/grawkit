@@ -77,7 +77,7 @@ git commit
 	<circle class="commit" cx="150" cy="350" r="7.5" />
 	<g class="label-branch" transform="translate(200,350)">
 		<rect x="0" y="-14" width="80" height="24" rx="3" class="label-rect" />
-		<text x="5" y="2" class="label-text">test-third</text>
+		<text x="5" y="2" textLength="70" class="label-text">test-third</text>
 	</g>
 </g>
 <g class="branch-test-second">
@@ -86,11 +86,11 @@ git commit
 	<circle class="commit" cx="100" cy="250" r="7.5" />
 	<g class="label-tag" transform="translate(200,250)">
 		<rect x="0" y="-14" width="87" height="24" rx="3" class="label-rect" />
-		<text x="5" y="2" class="label-text">v.2.0.0-rc1</text>
+		<text x="5" y="2" textLength="77" class="label-text">v.2.0.0-rc1</text>
 	</g>
 	<g class="label-branch" transform="translate(297,250)">
 		<rect x="0" y="-14" width="87" height="24" rx="3" class="label-rect" />
-		<text x="5" y="2" class="label-text">test-second</text>
+		<text x="5" y="2" textLength="77" class="label-text">test-second</text>
 	</g>
 </g>
 <g class="branch-test-first">
@@ -98,7 +98,7 @@ git commit
 	<circle class="commit" cx="50" cy="150" r="7.5" />
 	<g class="label-branch" transform="translate(200,150)">
 		<rect x="0" y="-14" width="80" height="24" rx="3" class="label-rect" />
-		<text x="5" y="2" class="label-text">test-first</text>
+		<text x="5" y="2" textLength="70" class="label-text">test-first</text>
 	</g>
 </g>
 <g class="branch-master">
@@ -108,11 +108,11 @@ git commit
 	<circle class="commit" cx="0" cy="300" r="7.5" />
 	<g class="label-tag" transform="translate(200,100)">
 		<rect x="0" y="-14" width="59" height="24" rx="3" class="label-rect" />
-		<text x="5" y="2" class="label-text">v.1.0.0</text>
+		<text x="5" y="2" textLength="49" class="label-text">v.1.0.0</text>
 	</g>
 	<g class="label-branch" transform="translate(200,300)">
 		<rect x="0" y="-14" width="52" height="24" rx="3" class="label-rect" />
-		<text x="5" y="2" class="label-text">master</text>
+		<text x="5" y="2" textLength="42" class="label-text">master</text>
 	</g>
 </g>
 </svg>
