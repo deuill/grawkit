@@ -443,7 +443,9 @@ END {
 	# Print color scheme definitions for branches.
 	for (i = 0; i < len["branches"]; i++) {
 		printf ".branch-" normalize(branches[i,"name"]) " {"
-		printf "stroke: " pallete[i + 1] "; fill: " pallete[i + 1] "}\n"
+		#reuse pallete (except black which is reserved for master)
+		p = (i - 1) % (length(pallete) - 1) + 2
+		printf "stroke: " pallete[p] "; fill: " pallete[p] "}\n"
 	}
 
 	print "]]></style>"
