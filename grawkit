@@ -148,13 +148,24 @@ function render_merge(idx, _, buf, tmp, refs, fields, m, i, hspc) {
 	for (i in fields) {
 		split(fields[i], m, "|")
 
-		# Add starting point to previous branch ending point.
-		tmp = "M" m[1] * style["branch/spacing"] "," m[2] * style["commit/spacing"]
+		if(length(m) == 2) {
+			# this is actually added by "git branch" command
+			# Add starting point to source branch ending point.
+			tmp = "M" m[1] * style["branch/spacing"] "," m[2] * style["commit/spacing"]
 
-		# Add Bezier curve leading to current branch starting point.
-		tmp = tmp " C" hspc "," m[2] * style["commit/spacing"]
-		tmp = tmp " " hspc "," m[2] * style["commit/spacing"]
-		tmp = tmp " " hspc "," refs[1] * style["commit/spacing"]
+			# Add Bezier curve leading to target branch starting point.
+			tmp = tmp " C" hspc "," m[2] * style["commit/spacing"]
+			tmp = tmp " " hspc "," m[2] * style["commit/spacing"]
+			tmp = tmp " " hspc "," refs[1] * style["commit/spacing"]
+		} else {
+		    # Add starting point to target branch ending point.
+			tmp = "M" m[1] * style["branch/spacing"] "," m[3] * style["commit/spacing"]
+
+			# Add Bezier curve leading to specific commit from source branch.
+			tmp = tmp " C" hspc "," m[3] * style["commit/spacing"]
+			tmp = tmp " " hspc "," m[3] * style["commit/spacing"]
+			tmp = tmp " " hspc "," m[2] * style["commit/spacing"] 
+		}
 
 		# Draw the path.
 		buf = buf "\n\t\t" sprintf(svg["path"], tmp)
@@ -340,11 +351,14 @@ $0 ~ rule["merge"] {
 	# Add a merge commit to current branch.
 	add_commit("merge", "Merge commit")
 
-	# Add merge reference to target branch.
+	# Add merge reference from last commit in source branch to target branch.
+    #  branch|from-commit|to-commit
+    split(branches[i,"refs"], refs, ",")
+    merge = state["branch"] "|" refs[length(refs)] "|" state["HEAD"]
 	if (branches[i,"merges"] == "") {
-		branches[i,"merges"] = state["branch"] "|" state["HEAD"]
+		branches[i,"merges"] = merge
 	} else {
-		branches[i,"merges"] = branches[i,"merges"] "," state["branch"] "|" state["HEAD"]
+		branches[i,"merges"] = branches[i,"merges"] "," merge
 	}
 
 	next
