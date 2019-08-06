@@ -27,7 +27,7 @@ git merge feature/ZZ-704_take-it-to-the-limit
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 -10 465 420">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 -10 465 470">
 <style type="text/css"><![CDATA[
 .branch {
 	fill: none;
@@ -59,6 +59,7 @@ git merge feature/ZZ-704_take-it-to-the-limit
 <g class="merge">
 	<g class="branch-feature-abc-66-make-bar">
 		<path class="branch" d="M50,250 C200,250 200,250 200,300" />
+		<path class="branch" d="M200,350 L200,450" />
 	</g>
 	<g class="branch-feature-zz-704-take-it-to-the-limit">
 		<path class="branch" d="M50,50 C150,50 150,50 150,200" />
@@ -70,6 +71,7 @@ git merge feature/ZZ-704_take-it-to-the-limit
 	</g>
 	<g class="branch-develop">
 		<path class="branch" d="M50,0 C50,0 50,0 50,50" />
+		<path class="branch" d="M50,400 L50,450" />
 	</g>
 </g>
 <g class="branch-feature-abc-66-make-bar">

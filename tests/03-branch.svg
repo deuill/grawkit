@@ -18,7 +18,7 @@ git commit
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 190 270">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 190 320">
 <style type="text/css"><![CDATA[
 .branch {
 	fill: none;
@@ -47,9 +47,11 @@ git commit
 <g class="merge">
 	<g class="branch-test-stuff">
 		<path class="branch" d="M0,100 C50,100 50,100 50,150" />
+		<path class="branch" d="M50,200 L50,300" />
 	</g>
 	<g class="branch-master">
 		<path class="branch" d="M0,0 C0,0 0,0 0,50" />
+		<path class="branch" d="M0,250 L0,300" />
 	</g>
 </g>
 <g class="branch-test-stuff">

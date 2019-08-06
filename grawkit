@@ -129,7 +129,7 @@ function render_label(idx, class, name, _, buf, tw, w, h, hspc, vspc) {
 }
 
 # > Function `render_merge` renders merge paths for a branch pointed to by `idx`.
-function render_merge(idx, _, buf, tmp, refs, fields, m, i, hspc) {
+function render_merge(idx, _, buf, tmp, refs, fields, m, i, hspc, last) {
 	# Do not render merge paths for branch with no commits.
 	if (branches[idx,"refs"] == "") {
 		return
@@ -159,6 +159,16 @@ function render_merge(idx, _, buf, tmp, refs, fields, m, i, hspc) {
 		tmp = tmp " " hspc "," ((m[2] == "") ? refs[1] : m[2]) * style["commit/spacing"]
 
 		# Draw the path.
+		buf = buf "\n\t\t" sprintf(svg["path"], tmp)
+
+		# Store the commit reference for the source commit of the last merge.
+		last = m[2]
+	}
+
+	# Extend branch to the end of time, if the last commit reference wasn't a merge source commit.
+	if (refs[length(refs)] != last) {
+		tmp = "M" hspc "," refs[length(refs)] * style["commit/spacing"]
+		tmp = tmp " L" hspc "," (state["HEAD"] + 1) * style["commit/spacing"]
 		buf = buf "\n\t\t" sprintf(svg["path"], tmp)
 	}
 
@@ -414,7 +424,7 @@ END {
 	w += style["branch/spacing"] * len["branches"]
 	w -= (branches[0,"refs"] == "") ? style["branch/spacing"] : 0
 
-	h = (style["commit/spacing"] * (len["commits"] - 1)) + (style["commit/stroke-width"] * 4)
+	h = (style["commit/spacing"] * (len["commits"])) + (style["commit/stroke-width"] * 4)
 
 	# Print SVG header.
 	printf svg["svg"], x, y, w, h

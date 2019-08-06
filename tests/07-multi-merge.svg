@@ -23,7 +23,7 @@ git merge second
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 212 420">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 212 470">
 <style type="text/css"><![CDATA[
 .branch {
 	fill: none;
@@ -58,9 +58,11 @@ git merge second
 	</g>
 	<g class="branch-first">
 		<path class="branch" d="M0,50 C50,50 50,50 50,100" />
+		<path class="branch" d="M50,250 L50,450" />
 	</g>
 	<g class="branch-master">
 		<path class="branch" d="M0,0 C0,0 0,0 0,50" />
+		<path class="branch" d="M0,400 L0,450" />
 	</g>
 </g>
 <g class="branch-second">

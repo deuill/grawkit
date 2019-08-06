@@ -16,7 +16,7 @@ git merge test-merging
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 204 220">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 204 270">
 <style type="text/css"><![CDATA[
 .branch {
 	fill: none;
@@ -49,6 +49,7 @@ git merge test-merging
 	</g>
 	<g class="branch-master">
 		<path class="branch" d="M0,0 C0,0 0,0 0,50" />
+		<path class="branch" d="M0,200 L0,250" />
 	</g>
 </g>
 <g class="branch-test-merging">
