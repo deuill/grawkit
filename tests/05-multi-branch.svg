@@ -62,7 +62,7 @@ git commit
 	</g>
 	<g class="branch-test-second">
 		<path class="branch" d="M0,50 C100,50 100,50 100,200" />
-		<path class="branch" d="M0,300 C100,300 100,300 100,200" />
+		<path class="branch" d="M0,300 C100,300 100,300 100,250" />
 	</g>
 	<g class="branch-test-first">
 		<path class="branch" d="M0,50 C50,50 50,50 50,150" />

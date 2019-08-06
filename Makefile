@@ -13,7 +13,7 @@ CMD = $(CURDIR)/grawkit
 
 # Default executables to use.
 SHELL = /bin/bash
-DIFF  = $(shell which colordiff || which diff)
+DIFF  = $(shell which colordiff 2> /dev/null || which diff)
 
 # Test files to execute.
 TESTS ?= $(shell find tests/*)

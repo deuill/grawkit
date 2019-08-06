@@ -66,13 +66,10 @@ git merge feature/ZZ-704_take-it-to-the-limit
 	</g>
 	<g class="branch-feature-xyz-12-fix-foo">
 		<path class="branch" d="M50,50 C100,50 100,50 100,100" />
-		<path class="branch" d="M50,250 C100,250 100,250 100,100" />
+		<path class="branch" d="M50,250 C100,250 100,250 100,150" />
 	</g>
 	<g class="branch-develop">
 		<path class="branch" d="M50,0 C50,0 50,0 50,50" />
-	</g>
-	<g class="branch-master">
-		<path class="branch" d="M0,0 C0,0 0,0 0,0" />
 	</g>
 </g>
 <g class="branch-feature-abc-66-make-bar">

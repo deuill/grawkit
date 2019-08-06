@@ -25,9 +25,9 @@ function add_branch(name) {
 	# Branches created before the first commit is established extend to the
 	# beginning of time.
 	if (state["HEAD"] != "") {
-		branches[len["branches"],"merges"] = state["branch"] "|" state["HEAD"]
+		branches[len["branches"],"merges"] = state["branch"] "||" state["HEAD"]
 	} else {
-		branches[len["branches"],"merges"] = len["branches"] "|0"
+		branches[len["branches"],"merges"] = len["branches"] "||0"
 	}
 
 	len["branches"] += 1
@@ -131,7 +131,7 @@ function render_label(idx, class, name, _, buf, tw, w, h, hspc, vspc) {
 # > Function `render_merge` renders merge paths for a branch pointed to by `idx`.
 function render_merge(idx, _, buf, tmp, refs, fields, m, i, hspc) {
 	# Do not render merge paths for branch with no commits.
-	if (branches[idx,"merges"] == "") {
+	if (branches[idx,"refs"] == "") {
 		return
 	}
 
@@ -148,24 +148,15 @@ function render_merge(idx, _, buf, tmp, refs, fields, m, i, hspc) {
 	for (i in fields) {
 		split(fields[i], m, "|")
 
-		if(length(m) == 2) {
-			# this is actually added by "git branch" command
-			# Add starting point to source branch ending point.
-			tmp = "M" m[1] * style["branch/spacing"] "," m[2] * style["commit/spacing"]
+		# Add starting point to target branch ending point.
+		tmp = "M" m[1] * style["branch/spacing"] "," m[3] * style["commit/spacing"]
 
-			# Add Bezier curve leading to target branch starting point.
-			tmp = tmp " C" hspc "," m[2] * style["commit/spacing"]
-			tmp = tmp " " hspc "," m[2] * style["commit/spacing"]
-			tmp = tmp " " hspc "," refs[1] * style["commit/spacing"]
-		} else {
-		    # Add starting point to target branch ending point.
-			tmp = "M" m[1] * style["branch/spacing"] "," m[3] * style["commit/spacing"]
+		# Add Bezier curve leading to specific commit from source branch.
+		tmp = tmp " C" hspc "," m[3] * style["commit/spacing"]
+		tmp = tmp " " hspc "," m[3] * style["commit/spacing"]
 
-			# Add Bezier curve leading to specific commit from source branch.
-			tmp = tmp " C" hspc "," m[3] * style["commit/spacing"]
-			tmp = tmp " " hspc "," m[3] * style["commit/spacing"]
-			tmp = tmp " " hspc "," m[2] * style["commit/spacing"] 
-		}
+		# Set default starting point for merge to beginning of branch, if none is set.
+		tmp = tmp " " hspc "," ((m[2] == "") ? refs[1] : m[2]) * style["commit/spacing"]
 
 		# Draw the path.
 		buf = buf "\n\t\t" sprintf(svg["path"], tmp)
@@ -240,7 +231,7 @@ BEGIN {
 	# Branch definitions.
 	branches[0,"name"] = "master"
 	branches[0,"refs"] = ""
-	branches[0,"merges"] = "0|0"
+	branches[0,"merges"] = "0||0"
 	branches[0,"tags"]   = ""
 	len["branches"] = 1
 
@@ -352,9 +343,10 @@ $0 ~ rule["merge"] {
 	add_commit("merge", "Merge commit")
 
 	# Add merge reference from last commit in source branch to target branch.
-    #  branch|from-commit|to-commit
+    # Format: to-branch|from-commit|to-commit
     split(branches[i,"refs"], refs, ",")
     merge = state["branch"] "|" refs[length(refs)] "|" state["HEAD"]
+
 	if (branches[i,"merges"] == "") {
 		branches[i,"merges"] = merge
 	} else {

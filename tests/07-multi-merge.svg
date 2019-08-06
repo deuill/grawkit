@@ -1,0 +1,95 @@
+<!--
+
+git commit
+git branch first
+git branch second
+
+git checkout first
+git commit
+
+git checkout second
+git commit
+git commit
+
+git checkout first
+git merge second
+
+git checkout second
+git commit
+git commit
+
+git checkout master
+git merge second
+
+-->
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 212 420">
+<style type="text/css"><![CDATA[
+.branch {
+	fill: none;
+	stroke-width: 10;
+	stroke-linecap: round;
+}
+.commit {
+	fill: #fff;
+	stroke-width: 5;
+}
+.label-tag {
+	fill: #333;
+}
+.label-rect {
+	stroke: none;
+}
+.label-text {
+	font-family: Inconsolata, Consolas, monospace;
+	font-size: 14px;
+	fill: #fff;
+	stroke: none;
+}
+.branch-master {stroke: #002b36; fill: #002b36}
+.branch-first {stroke: #268bd2; fill: #268bd2}
+.branch-second {stroke: #859900; fill: #859900}
+]]></style>
+<g class="merge">
+	<g class="branch-second">
+		<path class="branch" d="M0,50 C100,50 100,50 100,150" />
+		<path class="branch" d="M50,250 C100,250 100,250 100,200" />
+		<path class="branch" d="M0,400 C100,400 100,400 100,350" />
+	</g>
+	<g class="branch-first">
+		<path class="branch" d="M0,50 C50,50 50,50 50,100" />
+	</g>
+	<g class="branch-master">
+		<path class="branch" d="M0,0 C0,0 0,0 0,50" />
+	</g>
+</g>
+<g class="branch-second">
+	<path class="branch" d="M100,150 L100,350" />
+	<circle class="commit" cx="100" cy="150" r="7.5" />
+	<circle class="commit" cx="100" cy="200" r="7.5" />
+	<circle class="commit" cx="100" cy="300" r="7.5" />
+	<circle class="commit" cx="100" cy="350" r="7.5" />
+	<g class="label-branch" transform="translate(150,350)">
+		<rect x="0" y="-14" width="52" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" textLength="42" class="label-text">second</text>
+	</g>
+</g>
+<g class="branch-first">
+	<path class="branch" d="M50,100 L50,250" />
+	<circle class="commit" cx="50" cy="100" r="7.5" />
+	<circle class="commit" cx="50" cy="250" r="7.5" />
+	<g class="label-branch" transform="translate(150,250)">
+		<rect x="0" y="-14" width="45" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" textLength="35" class="label-text">first</text>
+	</g>
+</g>
+<g class="branch-master">
+	<path class="branch" d="M0,50 L0,400" />
+	<circle class="commit" cx="0" cy="50" r="7.5" />
+	<circle class="commit" cx="0" cy="400" r="7.5" />
+	<g class="label-branch" transform="translate(150,400)">
+		<rect x="0" y="-14" width="52" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" textLength="42" class="label-text">master</text>
+	</g>
+</g>
+</svg>

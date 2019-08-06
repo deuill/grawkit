@@ -29,9 +29,5 @@
 }
 .branch-master {stroke: #002b36; fill: #002b36}
 ]]></style>
-<g class="merge">
-	<g class="branch-master">
-		<path class="branch" d="M0,0 C0,0 0,0 0,0" />
-	</g>
-</g>
+
 </svg>
