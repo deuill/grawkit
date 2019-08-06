@@ -39,7 +39,7 @@ git commit
 
 You can execute either:
 
-```
+```sh
 cat test.txt | grawkit
 # or
 grawkit test.txt
@@ -47,7 +47,9 @@ grawkit test.txt
 
 Which will produce SVG markup to standard output, rendered as:
 
-<img src="https://rawgit.com/deuill/grawkit/892a5cec4dee58838fb18f87fcb00f9d8f4d35a8/tests/03-branch.svg" alt="">
+<p align="center"> <img
+src="https://rawgit.com/deuill/grawkit/892a5cec4dee58838fb18f87fcb00f9d8f4d35a8/tests/03-branch.svg"
+alt="" width="300"></p>
 
 ## License
 
