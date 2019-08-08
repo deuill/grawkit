@@ -35,10 +35,10 @@ function add_branch(name) {
 
 # > Function `add_commit` adds a new commit, with a specific type and message,
 # > to the internal list of commits to render.
-function add_commit(type, message) {
+function add_commit(type, msg) {
 	# Add commit information.
 	commits[len["commits"],"type"]    = type
-	commits[len["commits"],"message"] = message
+	commits[len["commits"],"message"] = msg
 
 	# Update commit references.
 	if (branches[state["branch"],"refs"] == "") {
@@ -182,14 +182,12 @@ function render_merge(idx, _, buf, tmp, refs, fields, m, i, hspc, last) {
 
 BEGIN {
 	# Errors.
-	error["branch/no-name"]   = "Empty name for `git branch`, line %d\n"
-	error["branch/duplicate"] = "Unable to create duplicate branch '%s', line %d\n"
-
-	error["checkout/no-branch"] = "No branch with name '%s', line %d\n"
-	error["checkout/no-name"]   = "Empty name for `git checkout`, line %d\n"
-
-	error["merge/no-name"] = "Empty name for `git merge`, line %d\n"
-	error["label/no-name"] = "Empty name for `git tag`, line %d\n"
+	message["branch/no-name"]   = "Empty name for `git branch`, line %d"
+	message["branch/no-branch"] = "No branch with name '%s', line %d"
+	message["branch/duplicate"] = "Unable to create duplicate branch '%s', line %d"
+	message["checkout/no-name"] = "Empty name for `git checkout`, line %d"
+	message["merge/no-name"]    = "Empty name for `git merge`, line %d"
+	message["label/no-name"]    = "Empty name for `git tag`, line %d"
 
 	# Rule matching.
 	rule["commit"]         = "^git commit"
@@ -277,15 +275,15 @@ $0 ~ rule["branch"] {
 	# Get branch name and throw error if one is not set.
 	match($0, rule["branch/name"], n)
 	if (n[1] == "") {
-		printf error["branch/no-name"], FNR
-		exit 1
+		error = sprintf(message["branch/no-name"], FNR)
+		exit
 	}
 
 	# Throw error if branch already exists.
 	for (i = 0; i < len["branches"]; i++) {
 		if (branches[i,"name"] == n[1]) {
-			printf error["branch/duplicate"], n[1], FNR | "cat >&2"
-			exit 1
+			error = sprintf(message["branch/duplicate"], n[1], FNR)
+			exit
 		}
 	}
 
@@ -299,8 +297,8 @@ $0 ~ rule["checkout"] {
 	# Get branch name and throw error if one is not set.
 	match($0, rule["checkout/name"], n)
 	if (n[1] == "") {
-		printf error["checkout/no-name"], FNR | "cat >&2"
-		exit 1
+		error = sprintf(message["checkout/no-name"], FNR)
+		exit
 	}
 
 	# Throw error if branch does not exist.
@@ -313,8 +311,8 @@ $0 ~ rule["checkout"] {
 	}
 
 	if (found == 0) {
-		printf error["branch/no-branch"], n[1], FNR | "cat >&2"
-		exit 1
+		error = sprintf(message["branch/no-branch"], n[1], FNR)
+		exit
 	}
 
 	# Set internal state.
@@ -331,8 +329,8 @@ $0 ~ rule["merge"] {
 	# Get branch name and throw error if one is not set.
 	match($0, rule["merge/name"], n)
 	if (n[1] == "") {
-		printf error["merge/no-name"], FNR | "cat >&2"
-		exit 1
+		error = sprintf(message["merge/no-name"], FNR)
+		exit
 	}
 
 	# Throw error if branch does not exist.
@@ -345,8 +343,8 @@ $0 ~ rule["merge"] {
 	}
 
 	if (found == 0) {
-		printf error["branch/no-branch"], n[1], FNR | "cat >&2"
-		exit 1
+		error = sprintf(message["branch/no-branch"], n[1], FNR)
+		exit
 	}
 
 	# Add a merge commit to current branch.
@@ -371,8 +369,8 @@ $0 ~ rule["tag"] {
 	# Get tag name and throw error if one is not set.
 	match($0, rule["label/name"], n)
 	if (n[1] == "") {
-		printf error["label/no-name"], FNR | "cat >&2"
-		exit 1
+		error = sprintf(message["label/no-name"], FNR)
+		exit
 	}
 
 	# Add tag reference to target branch.
@@ -392,6 +390,12 @@ $0 ~ rule["tag"] {
 # internal state, as defined in the command-line provided.
 
 END {
+	# Handle any error that might've occurred during parsing.
+	if (error != "") {
+		print error | "cat >&2"
+		exit 1
+	}
+
 	w = 0
 	body = ""
 
