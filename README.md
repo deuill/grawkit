@@ -13,7 +13,8 @@ A full test-suite is provided (depending only on `make` and `awk`), which should
 ## Installation
 
 Copy the included `grawkit` AWK script into your local search path (most commonly
-`$HOME/.local/bin`), or just use it directly in this folder.
+`$HOME/.local/bin`), or just use it directly in this folder. Grawkit should work with most
+POSIX-compatible AWK implementations, and has been tested against `gawk`, `nawk`, `busybox awk`, and `goawk`.
 
 ## Status & Usage
 

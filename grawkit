@@ -1,29 +1,26 @@
-#!/usr/bin/gawk -f
+#!/usr/bin/awk -f
 #
 # Grawkit — The Awksome Git Graph Generator.
 # ==========================================
 #
 # Grawkit is a tool that helps build SVG graphs from Git command-line descriptions.
 #
-# This documentation is built using Markdown syntax, and can be parsed out by
-# running `make doc` in the project root. Please check the project's README file
-# for additional information.
+# This documentation is built using Markdown syntax, and can be parsed out by running `make doc` in
+# the project root. Please check the project's README file for additional information.
 #
 # Built-in Functions
 # ------------------
 #
-# This section contains global helper functions, used across different rules, as
-# defined in the next section below.
+# This section contains global helper functions, used across different rules, as defined in the next
+# section below.
 
-# > Function `add_branch` adds a new, empty branch to the internal list of branches
-# > to render.
+# > Function `add_branch` adds a new, empty branch to the internal list of branches to render.
 function add_branch(name) {
 	branches[len["branches"],"name"] = name
 	branches[len["branches"],"refs"] = ""
 	branches[len["branches"],"tags"] = ""
 
-	# Branches created before the first commit is established extend to the
-	# beginning of time.
+	# Branches created before the first commit is established extend to the beginning of time.
 	if (state["HEAD"] != "") {
 		branches[len["branches"],"merges"] = state["branch"] "||" state["HEAD"]
 	} else {
@@ -33,8 +30,8 @@ function add_branch(name) {
 	len["branches"] += 1
 }
 
-# > Function `add_commit` adds a new commit, with a specific type and message,
-# > to the internal list of commits to render.
+# > Function `add_commit` adds a new commit, with a specific type and message, to the internal list
+# > of commits to render.
 function add_commit(type, msg) {
 	# Add commit information.
 	commits[len["commits"],"type"]    = type
@@ -51,22 +48,15 @@ function add_commit(type, msg) {
 	len["commits"] += 1
 }
 
-# > Function `normalize` removes invalid characters and makes string lower-case.
-function normalize(text) {
-	text = gensub("[/_. ]", "-", "g", tolower(text))
-	return text
-}
-
-# > Function `render_branch` renders pre-defined branch under a specific name
-# > to its SVG representation.
-function render_branch(idx, _, buf, tmp, refs, tags, t, i, hspc, vspc) {
+# > Function `render_branch` renders pre-defined branch under a specific name to its SVG representation.
+function render_branch(idx, _, buf, tmp, refs, tags, t, i, n, hspc, vspc) {
 	# Do not render branch with no commits.
 	if (branches[idx,"refs"] == "") {
 		return
 	}
 
 	# Get commit refs.
-	split(branches[idx,"refs"], refs, ",")
+	n = split(branches[idx,"refs"], refs, ",")
 	hspc = idx * style["branch/spacing"]
 
 	# Print branch root element.
@@ -74,13 +64,13 @@ function render_branch(idx, _, buf, tmp, refs, tags, t, i, hspc, vspc) {
 
 	# Add path for branch.
 	tmp = "M" hspc "," refs[1] * style["commit/spacing"]
-	tmp = tmp " L" hspc "," refs[length(refs)] * style["commit/spacing"]
+	tmp = tmp " L" hspc "," refs[count(refs)] * style["commit/spacing"]
 
 	# Print path.
 	buf = buf "\n\t" sprintf(svg["path"], tmp)
 
 	# Add commits on path.
-	for (i in refs) {
+	for (i = 1; i <= n; i++) {
 		vspc = refs[i] * style["commit/spacing"]
 
 		tmp = sprintf(svg["circle"], hspc, vspc, style["commit/radius"])
@@ -88,14 +78,14 @@ function render_branch(idx, _, buf, tmp, refs, tags, t, i, hspc, vspc) {
 	}
 
 	# Add branch tags as labels.
-	split(branches[idx,"tags"], tags, ",")
-	for (i in tags) {
+	n = split(branches[idx,"tags"], tags, ",")
+	for (i = 1; i <= n; i++) {
 		split(tags[i], t, "|")
 		buf = buf render_label(t[1], t[2], t[3])
 	}
 
 	# Add branch name as label on last commit.
-	buf = buf render_label(refs[length(refs)], "branch", branches[idx,"name"])
+	buf = buf render_label(refs[count(refs)], "branch", branches[idx,"name"])
 
 	return buf "\n" svg["/g"]
 }
@@ -143,9 +133,9 @@ function render_merge(idx, _, buf, tmp, refs, fields, m, i, hspc, last) {
 	buf = "\n\t" sprintf(svg["g"], normalize("branch-" branches[idx,"name"]))
 
 	# Add merge paths for branch, if any.
-	split(branches[idx,"merges"], fields, ",")
+	n = split(branches[idx,"merges"], fields, ",")
 
-	for (i in fields) {
+	for (i = 1; i <= n; i++) {
 		split(fields[i], m, "|")
 
 		# Add starting point to target branch ending point.
@@ -166,13 +156,104 @@ function render_merge(idx, _, buf, tmp, refs, fields, m, i, hspc, last) {
 	}
 
 	# Extend branch to the end of time, if the last commit reference wasn't a merge source commit.
-	if (refs[length(refs)] != last) {
-		tmp = "M" hspc "," refs[length(refs)] * style["commit/spacing"]
+	if (refs[count(refs)] != last) {
+		tmp = "M" hspc "," refs[count(refs)] * style["commit/spacing"]
 		tmp = tmp " L" hspc "," (state["HEAD"] + 1) * style["commit/spacing"]
 		buf = buf "\n\t\t" sprintf(svg["path"], tmp)
 	}
 
 	return buf "\n\t" svg["/g"]
+}
+
+# > Function `parse_command` reads the given string, and sets the global `command` array variable to
+# > its decomposed parts. For example, given the following command-line:
+# >
+# >     git checkout -b some-branch other-branch
+# >
+# > The `command` would have the following fields set:
+# >
+# >     'command': 'git checkout'
+# >     'argument,b': 'some-branch'
+# >     'target': 'other-branch'
+# >
+# > It is assumed that downstream callers have knowledge of argument keys of interest, and can fetch
+# > their values using direct references.
+# > Target values can be placed anywhere in the command string; however, these should generally appear
+# > after any command-line arguments, and will be preferred in that position if any ambiguities arise.
+# > As with command-line arguments, these target values may not appear in command strings, and callers
+# > should check for their existence.
+function parse_command(str, _, i, m) {
+	# Clear existing command array.
+	split("", command)
+
+	# Match base command.
+	match(str, rule["command"])
+	if (RLENGTH == -1) {
+		return
+	}
+
+	command["command"] = trim(substr(str, RSTART, RLENGTH))
+
+	str = substr(str, RSTART + RLENGTH)
+	match(str, rule["argument"])
+
+	# Match any command-line arguments, either long or short, with additional data or not.
+	while (RLENGTH != -1) {
+		m = substr(str, RSTART, RLENGTH)
+		match(m, rule["argument"])
+
+		i = (index(m, " ") > 0) ? index(m, " ") : index(m, "=");
+
+		if (i > 0) {
+			command["argument",trim(substr(m, 0, i), "- ")] = trim(substr(m, i), "\"' ")
+		} else {
+			command["argument",trim(m, "- ")] = ""
+		}
+
+		str = substr(str, 0, RSTART - 1) substr(str, RSTART + RLENGTH)
+		match(str, rule["argument"])
+	}
+
+
+	# Match target, if any.
+	match(str, rule["target"])
+	if (RLENGTH != -1) {
+		command["target"] = trim(substr(str, RSTART, + RLENGTH))
+	}
+}
+
+# > Function `normalize` removes invalid characters and makes string lower-case.
+function normalize(str) {
+	gsub("[/_. ]", "-", str)
+	return tolower(str)
+}
+
+# > Function `count` returns the number of elements in the given array.
+function count(arr, _, i) {
+	for (_ in arr) {i++}
+	return i
+}
+
+# > Function `trim` removes characters (whitespace by default) off both ends of the string passed,
+# > and returns the modified string.
+function trim(str, ch) {
+	return ltrim(rtrim(str, ch), ch)
+}
+
+# > Function `ltrim` removes characters (whitespace by default) off the left end of the string
+# > passed, and returns the modified string.
+function ltrim(str, ch) {
+	ch = (ch != "") ? ch : " "
+	gsub("^[" ch "]+", "", str)
+	return str
+}
+
+# > Function `rtrim` removes characters (whitespace by default) off the right end of the string
+# > passed, and returns the modified string.
+function rtrim(str, ch) {
+	ch = (ch != "") ? ch : " "
+	gsub("[" ch "]+$", "", str)
+	return str
 }
 
 # Global Declarations
@@ -190,20 +271,16 @@ BEGIN {
 	message["label/no-name"]    = "Empty name for `git tag`, line %d"
 
 	# Rule matching.
-	rule["commit"]         = "^git commit"
-	rule["commit/message"] = "(--message|-m)[ ]+['|\"]([^'\"]+)['|\"]"
+	rule["command"]        = "^git[ ]+[a-z]+[ ]+"
+	rule["target"]         = "(^[^ ]+?[ ]*|([ ]*--)?[ ]+)[^ ]+[ ]*$"
+	rule["argument/value"] = "['|\"]([^'\"]+?)['|\"]|[^-]{1,2}[^ ]+?"
+	rule["argument"]       = "^(--[a-z-](=" rule["argument/value"] ")?|-[a-z]([ ]+" rule["argument/value"] ")?)"
 
-	rule["branch"]      = "^git branch"
-	rule["branch/name"] = rule["branch"] "[ ]*([^ ]+)"
-
-	rule["checkout"]      = "^git checkout"
-	rule["checkout/name"] = rule["checkout"] "[ ]*([^ ]+)"
-
-	rule["merge"]      = "^git merge"
-	rule["merge/name"] = rule["merge"] "[ ]*([^ ]+)"
-
+	rule["commit"]   = "^git commit"
+	rule["branch"]   = "^git branch"
+	rule["checkout"] = "^git checkout"
+	rule["merge"]    = "^git merge"
 	rule["tag"]      = "^git tag"
-	rule["label/name"] = rule["tag"] "[ ]*([^ ]+)"
 
 	# Style definitions.
 	style["branch/spacing"]      = "50"
@@ -251,52 +328,65 @@ BEGIN {
 	# Tracks the state across calls.
 	state["branch"] = 0
 	state["HEAD"]   = ""
+
+	# Other global variables.
+	command[""] = ""
+	error = ""
 }
 
 # Rule Definitions
 # ----------------
 #
-# This block contains definitions for line manipulation rules used across Grawkit.
-# Rules may or may not be exclusive, i.e. the effects of one rule may cascade to
-# subsequent rules for the same line.
+# This block contains definitions for line manipulation rules used across Grawkit. Rules may or may
+# not be exclusive, i.e. the effects of one rule may cascade to subsequent rules for the same line.
 
 # > Match `git commit` declarations.
 $0 ~ rule["commit"] {
-	# Get commit message, if any.
-	match($0, rule["commit/message"], m)
+	# Parse command into normalized representation.
+	parse_command($0)
 
 	# Add new commit.
-	add_commit("commit", (2 in m) ? m[2] : "Empty message")
+	msg = command["argument","message"] ? command["argument","message"] : command["argument","m"]
+	if (msg != "") {
+		add_commit("commit", msg)
+	} else {
+		add_commit("commit", "Empty message")
+	}
+
 	next
 }
 
 # > Match `git branch` declarations.
 $0 ~ rule["branch"] {
+	# Parse command into normalized representation.
+	parse_command($0)
+
 	# Get branch name and throw error if one is not set.
-	match($0, rule["branch/name"], n)
-	if (n[1] == "") {
+	if (command["target"] == "") {
 		error = sprintf(message["branch/no-name"], FNR)
 		exit
 	}
 
 	# Throw error if branch already exists.
 	for (i = 0; i < len["branches"]; i++) {
-		if (branches[i,"name"] == n[1]) {
-			error = sprintf(message["branch/duplicate"], n[1], FNR)
+		if (branches[i,"name"] == command["target"]) {
+			error = sprintf(message["branch/duplicate"], command["target"], FNR)
 			exit
 		}
 	}
 
 	# Add empty branch as a placeholder.
-	add_branch(n[1])
+	add_branch(command["target"])
 	next
 }
 
 # > Match `git checkout` declarations.
 $0 ~ rule["checkout"] {
+	# Parse command into normalized representation.
+	parse_command($0)
+
 	# Get branch name and throw error if one is not set.
-	match($0, rule["checkout/name"], n)
-	if (n[1] == "") {
+	if (command["target"] == "") {
 		error = sprintf(message["checkout/no-name"], FNR)
 		exit
 	}
@@ -304,14 +394,14 @@ $0 ~ rule["checkout"] {
 	# Throw error if branch does not exist.
 	found = 0
 	for (i = 0; i < len["branches"]; i++) {
-		if (branches[i,"name"] == n[1]) {
+		if (branches[i,"name"] == command["target"]) {
 			found = 1
 			break
 		}
 	}
 
 	if (found == 0) {
-		error = sprintf(message["branch/no-branch"], n[1], FNR)
+		error = sprintf(message["branch/no-branch"], command["target"], FNR)
 		exit
 	}
 
@@ -319,16 +409,18 @@ $0 ~ rule["checkout"] {
 	state["branch"] = i
 
 	split(branches[i,"refs"], refs, ",")
-	state["HEAD"] = refs[length(refs)]
+	state["HEAD"] = refs[count(refs)]
 
 	next
 }
 
 # > Match `git merge` declarations.
 $0 ~ rule["merge"] {
+	# Parse command into normalized representation.
+	parse_command($0)
+
 	# Get branch name and throw error if one is not set.
-	match($0, rule["merge/name"], n)
-	if (n[1] == "") {
+	if (command["target"] == "") {
 		error = sprintf(message["merge/no-name"], FNR)
 		exit
 	}
@@ -336,14 +428,14 @@ $0 ~ rule["merge"] {
 	# Throw error if branch does not exist.
 	found = 0
 	for (i = 0; i < len["branches"]; i++) {
-		if (branches[i,"name"] == n[1]) {
+		if (branches[i,"name"] == command["target"]) {
 			found = 1
 			break
 		}
 	}
 
 	if (found == 0) {
-		error = sprintf(message["branch/no-branch"], n[1], FNR)
+		error = sprintf(message["branch/no-branch"], command["target"], FNR)
 		exit
 	}
 
@@ -353,7 +445,7 @@ $0 ~ rule["merge"] {
 	# Add merge reference from last commit in source branch to target branch.
     # Format: to-branch|from-commit|to-commit
     split(branches[i,"refs"], refs, ",")
-    merge = state["branch"] "|" refs[length(refs)] "|" state["HEAD"]
+    merge = state["branch"] "|" refs[count(refs)] "|" state["HEAD"]
 
 	if (branches[i,"merges"] == "") {
 		branches[i,"merges"] = merge
@@ -366,18 +458,20 @@ $0 ~ rule["merge"] {
 
 # > Match `git tag` declarations.
 $0 ~ rule["tag"] {
+	# Parse command into normalized representation.
+	parse_command($0)
+
 	# Get tag name and throw error if one is not set.
-	match($0, rule["label/name"], n)
-	if (n[1] == "") {
+	if (command["target"] == "") {
 		error = sprintf(message["label/no-name"], FNR)
 		exit
 	}
 
 	# Add tag reference to target branch.
 	if (branches[state["branch"],"tags"] == "") {
-		branches[state["branch"],"tags"] = state["HEAD"] "|tag|" n[1]
+		branches[state["branch"],"tags"] = state["HEAD"] "|tag|" command["target"]
 	} else {
-		branches[state["branch"],"tags"] = branches[state["branch"],"tags"] "," state["HEAD"] "|tag|" n[1]
+		branches[state["branch"],"tags"] = branches[state["branch"],"tags"] "," state["HEAD"] "|tag|" command["target"]
 	}
 
 	next
@@ -386,8 +480,8 @@ $0 ~ rule["tag"] {
 # SVG Graph Generation
 # --------------------
 #
-# This block contains logic for building the final SVG output from Grawkit's
-# internal state, as defined in the command-line provided.
+# This block contains logic for building the final SVG output from Grawkit's internal state, as
+# defined in the command-line provided.
 
 END {
 	# Handle any error that might've occurred during parsing.
@@ -414,8 +508,7 @@ END {
 		body = body render_branch(i)
 	}
 
-	# Calculate SVG canvas size, removing `master` branch from X offset if it
-	# contains no commits.
+	# Calculate SVG canvas size, removing `master` branch from X offset if it contains no commits.
 	x = style["branch/stroke-width"] * -1
 	x += (branches[0,"refs"] == "") ? style["branch/spacing"] : 0
 	y = style["branch/stroke-width"] * -1
@@ -463,8 +556,8 @@ END {
 	# Print color scheme definitions for branches.
 	for (i = 0; i < len["branches"]; i++) {
 		printf ".branch-" normalize(branches[i,"name"]) " {"
-		#reuse pallete (except black which is reserved for master)
-		p = (i - 1) % (length(pallete) - 1) + 2
+		# Reuse pallete (except primary colour which is reserved for master).
+		p = (i - 1) % (count(pallete) - 1) + 2
 		printf "stroke: " pallete[p] "; fill: " pallete[p] "}\n"
 	}
 

@@ -9,29 +9,30 @@
 # --------------------
 
 # Default name for Grawkit executable.
-CMD = $(CURDIR)/grawkit
+AWK := awk
+CMD := $(CURDIR)/grawkit
 
 # Default executables to use.
-SHELL = /bin/bash
-DIFF  = $(shell which colordiff 2> /dev/null || which diff)
+SHELL := /bin/bash
+DIFF  := $(shell which colordiff 2> /dev/null || which diff)
 
 # Test files to execute.
-TESTS ?= $(shell find tests/*)
+TESTS := $(shell find tests/*)
 
 # Color & style definitions.
-BOLD      = \033[1m
-UNDERLINE = \033[4m
-RED       = \033[31m
-GREEN     = \033[32m
-BLUE      = \033[36m
-RESET     = \033[0m
+BOLD      := \033[1m
+UNDERLINE := \033[4m
+RED       := \033[31m
+GREEN     := \033[32m
+BLUE      := \033[36m
+RESET     := \033[0m
 
 # ----------------
 # Other directives
 # ----------------
 
 # Make `help` be the default action when no arguments are passed to `make`.
-.DEFAULT_GOAL = help
+.DEFAULT_GOAL := help
 .PHONY: $(TESTS) test help
 
 # Awk script for extracting Grawkit documentation as Markdown.
@@ -73,7 +74,7 @@ test-after:
 $(TESTS):
 	$(eval TEST_$@     := awk '/<!--/ {f=1;next} /-->/ {exit} f' $@)
 	$(eval EXPECTED_$@ := awk '/-->/ {f=1;getline;next} f' $@)
-	$(eval ACTUAL_$@   := $(CMD) <($(TEST_$@)))
+	$(eval ACTUAL_$@   := $(AWK) -f $(CMD) <($(TEST_$@)))
 
 	@printf ">> $(BOLD)Testing file '$@'...$(RESET) "
 
