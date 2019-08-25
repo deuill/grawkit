@@ -1,0 +1,26 @@
+<h2>About the Grawkit Playground</h2>
+<p>
+	This is an online version of the <a href="https://github.com/deuill/grawkit">Grawkit</a> tool for
+	building SVG graphs based on command-line descriptions of <code>git</code> commands.
+</p>
+<p>
+	Simply fill in the textarea with <code>git</code> commands, as you would enter these in the
+	command-line, and press 'Generate' to return an SVG graph representation.
+</p>
+<h3>Features</h3>
+<p>
+	This can currently parse the following (to varying degrees):
+</p>
+<ul>
+	<li><code>git branch</code> for creating named branches</li>
+	<li><code>git commit</code> for adding commit markers on branches</li>
+	<li><code>git checkout</code> for changing branch contexts</li>
+	<li><code>git merge</code> for generating merges between branches</li>
+	<li><code>git tag</code> for adding labels to specific commits</li>
+</ul>
+<h3>Feedback & More Information</h3>
+<p>
+	For a full list of features, as well as for requesting new features, check the
+	<a href="https://github.com/deuill/grawkit">Github page</a> or feel free to
+	<a href="https://deuill.org/about">contact me</a>.
+</p>

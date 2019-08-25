@@ -1,0 +1,11 @@
+git commit -m "Commit on master"
+git commit -m "More stuff"
+
+git branch test-stuff
+git checkout test-stuff
+
+git commit -m "Testing stuff"
+git commit
+
+git checkout master
+git commit
