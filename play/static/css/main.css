@@ -7,9 +7,9 @@ html {
 }
 
 body {
-	background: #fff repeat center fixed;
+	background: #fefefe;
 	color: #333;
-	font-family: Nunito, Helvetica, sans-serif;
+	font-family: sans-serif;
 	font-size: 1.6rem;
 }
 
@@ -28,16 +28,18 @@ ul, ol {
 	list-style: disc outside;
 	padding-left: 2rem;
 }
+
 code {
-	background-color: #f8f8f8;
-	border-color: #f1f1f1;
-	border-radius: 0;
+	background-color: #eeeeec;
+	border-color: #eee;
+	border-radius: 0.2rem;
 	font-size: 100%;
 }
 
 a {
-	color: #c31;
-	transition: background .2s ease, border .2s ease, box-shadow .2s ease, color .2s ease, top .2s ease;
+	color: #c0392b;
+	font-weight: bold;
+	text-decoration: none;
 }
 
 a:hover, a:active {
@@ -45,30 +47,38 @@ a:hover, a:active {
 }
 
 .button {
-	background: #fff;
+	background: #333;
 	border: 0.2rem solid #333;
 	border-radius: 0;
-	box-shadow: 0 0.2rem #333;
-	color: #333;
-	font-size: 1.35rem;
-	font-weight: 600;
-	font-variant: small-caps;
-	padding: 0 0.5rem 0.25rem;
-	position: relative;
+	color: #fefefe;
+	font-family: monospace;
+	font-weight: bold;
+	padding: 0 1rem;
 	text-transform: none;
-	top: 0;
+	transition: background 0.2s ease, border 0.2s ease, color 0.2s ease;
+}
+
+.button-alt {
+	background: #fefefe;
+	color: #333;
 }
 
 .button:hover, .button:focus {
-	background: #fff;
-	border-color: #c31;
-	box-shadow: 0 0 #c31;
-	color: #333;
-	top: 0.2rem;
+	background: #c82829;
+	border-color: #c82829;
+	color: #fefefe;
+}
+
+.button-alt:hover, .button-alt:focus {
+	background: #fefefe;
+	border-color: #c82829;
+	color: #c82829;
 }
 
 .preview-header {
-	padding: 1rem 0;
+	border-bottom: 0.1rem solid #c1c1c1;
+	margin-bottom: 2rem;
+	padding: 1rem 0 0;
 }
 
 .preview-header a {
@@ -93,8 +103,10 @@ a:hover, a:active {
 }
 
 .editor {
-	background: #f8f8f8;
-	border: none;
+	background: #f3f3f3;
+	border: 0 solid #eee;
+	border-width: 0.1rem 0.1rem 0.4rem 0.1rem;
+	border-radius: 0;
 	font-family: monospace;
 	height: 65rem;
 	overflow: auto;
@@ -104,7 +116,7 @@ a:hover, a:active {
 }
 
 .editor:focus {
-	border: none;
+	border: 0.15rem solid #c82829;
 }
 
 .preview-generated {
@@ -117,6 +129,6 @@ a:hover, a:active {
 }
 
 .error {
-	color: #cc0000;
+	color: #c82829;
 	padding: 0 1rem;
 }

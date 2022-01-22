@@ -7,17 +7,15 @@
 		<meta name="description" content="">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 
-		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Nunito">
-
 		<link rel="stylesheet" href="/css/normalize.css">
 		<link rel="stylesheet" href="/css/skeleton.css">
 		<link rel="stylesheet" href="/css/main.css">
 	</head>
 
 	<body>
-		<div class="content container">
-			<form action="/" method="post">
-				<div class="preview-header row">
+		<form action="/" method="post" class="content">
+			<div class="preview-header">
+				<div class="container row">
 					<div class="column one-half">
 						<a href="/">
 							<span class="title">Grawkit<br>Playground</span>
@@ -26,12 +24,14 @@
 					</div>
 					<div class="column one-half">
 						<div class="action-buttons">
-							<button type="submit" name="generate" class="button" onclick="submitForm(this.form); return false;">Generate</button>
+							<button type="submit" name="generate" class="button button-alt" onclick="submitForm(this.form); return false;">Generate</button>
 							<button type="submit" name="download" class="button">Download</button>
 						</div>
 					</div>
 				</div>
-				<div class="preview-content row">
+			</div>
+			<div class="preview-content">
+				<div class="container row">
 					<div class="column one-half">
 						<textarea name="content" class="editor">{{if .Content}}{{printf .Content}}{{else}}{{template "default-content.template"}}{{end}}</textarea>
 					</div>
@@ -39,11 +39,13 @@
 						<div id="generated" class="preview-generated">{{if .Preview}}{{printf .Preview}}{{else}}{{template "default-preview.template"}}{{end}}</div>
 					</div>
 				</div>
-				<div class="preview-footer">
+			</div>
+			<div class="preview-footer">
+				<div class="container">
 					<div id="error" class="error">{{if .Error}}{{printf .Error}}{{end}}</div>
 				</div>
-			</form>
-		</div>
+			</div>
+		</form>
 		<script src="/js/main.js"></script>
 	</body>
 </html>
