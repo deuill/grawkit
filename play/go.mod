@@ -1,5 +1,5 @@
 module github.com/deuill/grawkit/play
 
-go 1.12
+go 1.17
 
-require github.com/benhoyt/goawk v1.6.0
+require github.com/benhoyt/goawk v1.13.0
