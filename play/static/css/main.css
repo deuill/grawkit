@@ -51,10 +51,8 @@ a:hover, a:active {
 	border: 0.2rem solid #333;
 	border-radius: 0;
 	color: #fefefe;
-	font-family: monospace;
 	font-weight: bold;
 	padding: 0 1rem;
-	text-transform: none;
 	transition: background 0.2s ease, border 0.2s ease, color 0.2s ease;
 }
 

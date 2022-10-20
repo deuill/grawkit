@@ -5,11 +5,10 @@
 //
 // To tokenize some source, create a new lexer with NewLexer(src) and
 // then call Scan() until the token type is EOF or ILLEGAL.
-//
 package lexer
 
 import (
-	"fmt"
+	"errors"
 )
 
 // Lexer tokenizes a byte string of AWK source code. Use NewLexer to
@@ -120,6 +119,8 @@ func (l *Lexer) scan() (Position, Token, string) {
 	switch ch {
 	case '$':
 		tok = DOLLAR
+	case '@':
+		tok = AT
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.':
 		// Avoid make/append and use l.offset directly for performance
 		start := l.offset - 2
@@ -184,80 +185,18 @@ func (l *Lexer) scan() (Position, Token, string) {
 		}
 	case '"', '\'':
 		// Note: POSIX awk spec doesn't allow single-quoted strings,
-		// but this helps without quoting, especially on Windows
+		// but this helps with quoting, especially on Windows
 		// where the shell quote character is " (double quote).
-		chars := make([]byte, 0, 32) // most won't require heap allocation
-		for l.ch != ch {
-			c := l.ch
-			if c == 0 {
-				return l.pos, ILLEGAL, "didn't find end quote in string"
-			}
-			if c == '\r' || c == '\n' {
-				return l.pos, ILLEGAL, "can't have newline in string"
-			}
-			if c != '\\' {
-				// Normal, non-escaped character
-				chars = append(chars, c)
-				l.next()
-				continue
-			}
-			// Escape sequence, skip over \ and process
-			l.next()
-			switch l.ch {
-			case 'n':
-				c = '\n'
-				l.next()
-			case 't':
-				c = '\t'
-				l.next()
-			case 'r':
-				c = '\r'
-				l.next()
-			case 'a':
-				c = '\a'
-				l.next()
-			case 'b':
-				c = '\b'
-				l.next()
-			case 'f':
-				c = '\f'
-				l.next()
-			case 'v':
-				c = '\v'
-				l.next()
-			case 'x':
-				// Hex byte of one of two hex digits
-				l.next()
-				digit := hexDigit(l.ch)
-				if digit < 0 {
-					return l.pos, ILLEGAL, "1 or 2 hex digits expected"
-				}
-				c = byte(digit)
-				l.next()
-				digit = hexDigit(l.ch)
-				if digit >= 0 {
-					c = c*16 + byte(digit)
-					l.next()
-				}
-			case '0', '1', '2', '3', '4', '5', '6', '7':
-				// Octal byte of 1-3 octal digits
-				c = l.ch - '0'
-				l.next()
-				for i := 0; i < 2 && l.ch >= '0' && l.ch <= '7'; i++ {
-					c = c*8 + l.ch - '0'
-					l.next()
-				}
-			default:
-				// Any other escape character is just the char
-				// itself, eg: "\z" is just "z"
-				c = l.ch
-				l.next()
-			}
-			chars = append(chars, c)
+		s, err := parseString(ch, func() byte { return l.ch }, l.next)
+		if err != nil {
+			return l.pos, ILLEGAL, err.Error()
+		}
+		if l.ch != ch {
+			return l.pos, ILLEGAL, "didn't find end quote in string"
 		}
 		l.next()
 		tok = STRING
-		val = string(chars)
+		val = s
 	case '(':
 		tok = LPAREN
 	case ')':
@@ -366,7 +305,7 @@ func (l *Lexer) scanRegex() (Position, Token, string) {
 		pos.Column -= 2
 		chars = append(chars, '=')
 	default:
-		return l.pos, ILLEGAL, fmt.Sprintf("unexpected %s preceding regex", l.lastTok)
+		panic("ScanRegex should only be called after DIV or DIV_ASSIGN token")
 	}
 	for l.ch != '/' {
 		c := l.ch
@@ -424,7 +363,7 @@ func (l *Lexer) unread() {
 }
 
 func isNameStart(ch byte) bool {
-	return ch == '_' || (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
+	return ch == '_' || ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z'
 }
 
 func isDigit(ch byte) bool {
@@ -458,4 +397,103 @@ func (l *Lexer) choice(ch byte, one, two Token) Token {
 // "getline lvalue" expressions. Returns 0 at end of input.
 func (l *Lexer) PeekByte() byte {
 	return l.ch
+}
+
+// Unescape unescapes the backslash escapes in s (which shouldn't include the
+// surrounding quotes) and returns the unquoted string. It's intended for use
+// when unescaping command line var=value assignments, as required by the
+// POSIX AWK spec.
+func Unescape(s string) (string, error) {
+	i := 0
+	ch := func() byte {
+		if i >= len(s) {
+			return 0
+		}
+		return s[i]
+	}
+	next := func() {
+		i++
+	}
+	return parseString(0, ch, next)
+}
+
+// Parses a string ending with given quote character (not parsed). The ch
+// function returns the current character (or 0 at the end); the next function
+// moves forward one character.
+func parseString(quote byte, ch func() byte, next func()) (string, error) {
+	chars := make([]byte, 0, 32) // most strings won't require heap allocation
+	for {
+		c := ch()
+		if c == quote || c == 0 {
+			break
+		}
+		if c == '\r' || c == '\n' {
+			return "", errors.New("can't have newline in string")
+		}
+		if c != '\\' {
+			// Normal, non-escaped character
+			chars = append(chars, c)
+			next()
+			continue
+		}
+		// Escape sequence, skip over \ and process
+		next()
+		switch ch() {
+		case 'n':
+			c = '\n'
+			next()
+		case 't':
+			c = '\t'
+			next()
+		case 'r':
+			c = '\r'
+			next()
+		case 'a':
+			c = '\a'
+			next()
+		case 'b':
+			c = '\b'
+			next()
+		case 'f':
+			c = '\f'
+			next()
+		case 'v':
+			c = '\v'
+			next()
+		case 'x':
+			// Hex byte of one of two hex digits
+			next()
+			digit := hexDigit(ch())
+			if digit < 0 {
+				return "", errors.New("1 or 2 hex digits expected")
+			}
+			c = byte(digit)
+			next()
+			digit = hexDigit(ch())
+			if digit >= 0 {
+				c = c*16 + byte(digit)
+				next()
+			}
+		case '0', '1', '2', '3', '4', '5', '6', '7':
+			// Octal byte of 1-3 octal digits
+			c = ch() - '0'
+			next()
+			for i := 0; i < 2 && ch() >= '0' && ch() <= '7'; i++ {
+				c = c*8 + ch() - '0'
+				next()
+			}
+		default:
+			// Any other escape character is just the char
+			// itself, eg: "\z" is just "z".
+			c = ch()
+			if c == 0 {
+				// Expect backslash right at the end of the string, which is
+				// interpreted as a literal backslash (only for Unescape).
+				c = '\\'
+			}
+			next()
+		}
+		chars = append(chars, c)
+	}
+	return string(chars), nil
 }

@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"flag"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -16,6 +15,9 @@ import (
 	"syscall"
 	"text/template"
 	"time"
+
+	// Internal packages.
+	"github.com/deuill/grawkit/play/static"
 
 	// Third-party packages
 	"github.com/benhoyt/goawk/interp"
@@ -33,20 +35,12 @@ const (
 )
 
 var (
-	// Command-line flags to parse.
 	scriptPath    = flag.String("script-path", "../grawkit", "The path to the Grawkit script")
-	staticDir     = flag.String("static-dir", "static", "The directory under which static files can be found")
 	listenAddress = flag.String("listen-address", "localhost:8080", "The default address to listen on")
 
 	index   *template.Template // The base template to render.
 	program *parser.Program    // The parsed version of the Grawkit script.
 )
-
-type templateData struct {
-	Content string
-	Preview string
-	Error   string
-}
 
 // ParseContent accepts un-filtered POST form content, and returns the content to render as a string.
 // An error is returned if the content is missing or otherwise invalid.
@@ -70,7 +64,11 @@ func parseContent(form url.Values) (string, error) {
 func handleRequest(w http.ResponseWriter, r *http.Request) {
 	// Handle template rendering on root path.
 	if r.URL.Path == "/" {
-		var data templateData
+		var data struct {
+			Content string
+			Preview string
+			Error   string
+		}
 		var outbuf, errbuf bytes.Buffer
 
 		switch r.Method {
@@ -117,22 +115,8 @@ func handleRequest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get sanitized filename for request path given.
-	name := path.Join(*staticDir, path.Clean(r.URL.Path))
-
-	// Check if a file exists for the path requested.
-	stat, err := os.Stat(name)
-	if os.IsNotExist(err) || stat != nil && stat.IsDir() {
-		http.NotFound(w, r)
-		return
-	} else if err != nil {
-		code := http.StatusInternalServerError
-		http.Error(w, http.StatusText(code), code)
-		return
-	}
-
 	// Serve file as fallback.
-	http.ServeFile(w, r, name)
+	http.FileServer(http.FS(static.FS)).ServeHTTP(w, r)
 }
 
 // Setup reads configuration flags and initializes global state for the service, returning an error
@@ -144,17 +128,17 @@ func setup() error {
 	// Set up and parse known template files.
 	var err error
 	var files = []string{
-		path.Join(*staticDir, "template", "index.template"),
-		path.Join(*staticDir, "template", "default-content.template"),
-		path.Join(*staticDir, "template", "default-preview.template"),
+		path.Join("template", "index.template"),
+		path.Join("template", "default-content.template"),
+		path.Join("template", "default-preview.template"),
 	}
 
-	if index, err = template.ParseFiles(files...); err != nil {
+	if index, err = template.ParseFS(static.FS, files...); err != nil {
 		return err
 	}
 
 	// Parse Grawkit script into concrete representation.
-	if script, err := ioutil.ReadFile(*scriptPath); err != nil {
+	if script, err := os.ReadFile(*scriptPath); err != nil {
 		return err
 	} else if program, err = parser.ParseProgram(script, nil); err != nil {
 		return err

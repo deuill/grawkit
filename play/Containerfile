@@ -1,0 +1,16 @@
+FROM docker.io/golang:1.19 AS builder
+WORKDIR /src
+
+COPY play/ /src/
+RUN go build -o /play play.go
+
+FROM docker.io/debian:stable-slim
+WORKDIR /play
+
+COPY --from=builder /play .
+COPY grawkit .
+
+USER nobody
+EXPOSE 8080
+
+CMD ["/play/play", "-script-path", "/play/grawkit", "-listen-address", ":8080"]

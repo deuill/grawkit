@@ -10,6 +10,35 @@ import (
 	. "github.com/benhoyt/goawk/lexer"
 )
 
+// Program is an entire AWK program.
+type Program struct {
+	Begin     []Stmts
+	Actions   []Action
+	End       []Stmts
+	Functions []Function
+	Scalars   map[string]int
+	Arrays    map[string]int
+}
+
+// String returns an indented, pretty-printed version of the parsed
+// program.
+func (p *Program) String() string {
+	parts := []string{}
+	for _, ss := range p.Begin {
+		parts = append(parts, "BEGIN {\n"+ss.String()+"}")
+	}
+	for _, a := range p.Actions {
+		parts = append(parts, a.String())
+	}
+	for _, ss := range p.End {
+		parts = append(parts, "END {\n"+ss.String()+"}")
+	}
+	for _, function := range p.Functions {
+		parts = append(parts, function.String())
+	}
+	return strings.Join(parts, "\n\n")
+}
+
 // Stmts is a block containing multiple statements.
 type Stmts []Stmt
 
@@ -53,24 +82,25 @@ type Expr interface {
 }
 
 // All these types implement the Expr interface.
-func (e *FieldExpr) expr()     {}
-func (e *UnaryExpr) expr()     {}
-func (e *BinaryExpr) expr()    {}
-func (e *ArrayExpr) expr()     {}
-func (e *InExpr) expr()        {}
-func (e *CondExpr) expr()      {}
-func (e *NumExpr) expr()       {}
-func (e *StrExpr) expr()       {}
-func (e *RegExpr) expr()       {}
-func (e *VarExpr) expr()       {}
-func (e *IndexExpr) expr()     {}
-func (e *AssignExpr) expr()    {}
-func (e *AugAssignExpr) expr() {}
-func (e *IncrExpr) expr()      {}
-func (e *CallExpr) expr()      {}
-func (e *UserCallExpr) expr()  {}
-func (e *MultiExpr) expr()     {}
-func (e *GetlineExpr) expr()   {}
+func (e *FieldExpr) expr()      {}
+func (e *NamedFieldExpr) expr() {}
+func (e *UnaryExpr) expr()      {}
+func (e *BinaryExpr) expr()     {}
+func (e *ArrayExpr) expr()      {}
+func (e *InExpr) expr()         {}
+func (e *CondExpr) expr()       {}
+func (e *NumExpr) expr()        {}
+func (e *StrExpr) expr()        {}
+func (e *RegExpr) expr()        {}
+func (e *VarExpr) expr()        {}
+func (e *IndexExpr) expr()      {}
+func (e *AssignExpr) expr()     {}
+func (e *AugAssignExpr) expr()  {}
+func (e *IncrExpr) expr()       {}
+func (e *CallExpr) expr()       {}
+func (e *UserCallExpr) expr()   {}
+func (e *MultiExpr) expr()      {}
+func (e *GetlineExpr) expr()    {}
 
 // FieldExpr is an expression like $0.
 type FieldExpr struct {
@@ -79,6 +109,15 @@ type FieldExpr struct {
 
 func (e *FieldExpr) String() string {
 	return "$" + e.Index.String()
+}
+
+// NamedFieldExpr is an expression like @"name".
+type NamedFieldExpr struct {
+	Field Expr
+}
+
+func (e *NamedFieldExpr) String() string {
+	return "@" + e.Field.String()
 }
 
 // UnaryExpr is an expression like -1234.
@@ -155,7 +194,11 @@ type NumExpr struct {
 }
 
 func (e *NumExpr) String() string {
-	return fmt.Sprintf("%.6g", e.Value)
+	if e.Value == float64(int(e.Value)) {
+		return strconv.Itoa(int(e.Value))
+	} else {
+		return fmt.Sprintf("%.6g", e.Value)
+	}
 }
 
 // StrExpr is a literal string like "foo".
