@@ -17,7 +17,7 @@ import (
 	"time"
 
 	// Internal packages.
-	"github.com/deuill/grawkit/play/static"
+	"go.deuill.org/grawkit/play/static"
 
 	// Third-party packages
 	"github.com/benhoyt/goawk/interp"
