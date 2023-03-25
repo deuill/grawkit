@@ -1,4 +1,4 @@
-#!/usr/bin/awk -f
+#!/usr/bin/awk --exec
 #
 # Grawkit — The Awksome Git Graph Generator.
 # ==========================================
@@ -222,6 +222,38 @@ function parse_command(str, _, i, m) {
 	}
 }
 
+# > Function `parse_arguments` implements basic command-line parsing, based on pre-existing defaults
+# in the global `config` array. Processing will cease as soon an unknown command-line argument is
+# encountered, in order to prevent incorrect handling of filenames
+function parse_arguments(argc, argv, _, arg, i, option) {
+	for (i = 1; i < argc; i++) {
+		# Stop reading at first non-command-line option.
+		if (substr(argv[i], 0, 2) != "--") {
+			return
+		}
+
+		arg = ltrim(argv[i], "-")
+		if (arg == "help") {
+			printf "Usage: grawkit [--help] "
+			for (k in config) {
+				printf "[--%s] ", k
+			}
+			printf "[FILE]\n"
+			exit exit_code = 0
+		} else {
+			# Check if command-line option given corresponds to a configuration option, or stop
+			# handling any more options.
+			if (split(arg, option, "=") == 2 && option[1] in config) {
+				config[option[1]] = option[2]
+			} else {
+				return
+			}
+		}
+
+		delete argv[i]
+	}
+}
+
 # > Function `normalize` removes invalid characters and makes string lower-case.
 function normalize(str) {
 	gsub("[/_. ]", "-", str)
@@ -262,6 +294,25 @@ function rtrim(str, ch) {
 # This block contains logic for initializing global variables used across Grawkit.
 
 BEGIN {
+	# Default configuration and command-line argument parsing.
+	config["default-branch"]      = "master"
+	config["branch-spacing"]      = "50"
+	config["branch-fill"]         = "none"
+	config["branch-stroke-width"] = "10"
+
+	config["commit-spacing"] = "50"
+	config["commit-fill"]    = "#fff"
+
+	config["label-spacing"]   = "10"
+	config["label-round"]     = "3"
+	config["label-fill"]      = "#333"
+	config["label-text"]      = "#fff"
+	config["label-font"]      = "Inconsolata, Consolas, monospace"
+	config["label-font-size"] = "14"
+
+	config["palette"] = "#002b36,#268bd2,#859900,#cb4b16,#2aa198,#dc322f,#d33682,#6c71c4,#b58900"
+	parse_arguments(ARGC, ARGV)
+
 	# Errors.
 	message["branch/no-name"]   = "Empty name for `git branch`, line %d"
 	message["branch/no-branch"] = "No branch with name '%s', line %d"
@@ -283,24 +334,24 @@ BEGIN {
 	rule["tag"]      = "^git tag"
 
 	# Style definitions.
-	style["branch/spacing"]      = "50"
-	style["branch/fill"]         = "none"
-	style["branch/stroke-width"] = "10"
+	style["branch/spacing"]      = config["branch-spacing"]
+	style["branch/fill"]         = config["branch-fill"]
+	style["branch/stroke-width"] = config["branch-stroke-width"]
 
-	style["commit/spacing"]      = "50"
-	style["commit/fill"]         = "#fff"
+	style["commit/spacing"]      = config["commit-spacing"]
+	style["commit/fill"]         = config["commit-fill"]
 	style["commit/stroke-width"] = style["branch/stroke-width"] / 2
 	style["commit/radius"]       = style["commit/stroke-width"] * 1.5
 
-	style["label/spacing"]   = "10"
-	style["label/round"]     = "3"
-	style["label/fill"]      = "#333"
-	style["label/text"]      = "#fff"
-	style["label/font"]      = "Inconsolata, Consolas, monospace"
-	style["label/font-size"] = "14"
+	style["label/spacing"]   = config["label-spacing"]
+	style["label/round"]     = config["label-round"]
+	style["label/fill"]      = config["label-fill"]
+	style["label/text"]      = config["label-text"]
+	style["label/font"]      = config["label-font"]
+	style["label/font-size"] = config["label-font-size"]
 
 	# Color scheme, based on `base16-solarized-dark`
-	style["pallete"] = "#002b36,#268bd2,#859900,#cb4b16,#2aa198,#dc322f,#d33682,#6c71c4,#b58900"
+	style["palette"] = config["palette"]
 
 	# Static SVG templates.
 	svg["svg"]    = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"%d %d %d %d\">"
@@ -314,7 +365,7 @@ BEGIN {
 	svg["text"]   = "<text x=\"%d\" y=\"%d\" textLength=\"%d\" class=\"label-text\">%s</text>"
 
 	# Branch definitions.
-	branches[0,"name"] = "master"
+	branches[0,"name"] = config["default-branch"]
 	branches[0,"refs"] = ""
 	branches[0,"merges"] = "0||0"
 	branches[0,"tags"]   = ""
@@ -331,6 +382,7 @@ BEGIN {
 
 	# Other global variables.
 	command[""] = ""
+	exit_code = -1
 	error = ""
 }
 
@@ -484,10 +536,12 @@ $0 ~ rule["tag"] {
 # defined in the command-line provided.
 
 END {
-	# Handle any error that might've occurred during parsing.
-	if (error != "") {
+	# Handle any early exit or error that might've occurred during parsing.
+	if (exit_code > -1) {
+		exit exit_code
+	} else if (error != "") {
 		print error | "cat >&2"
-		exit 1
+		exit (exit_code > -1) ? exit_code : 1
 	}
 
 	w = 0
@@ -551,14 +605,14 @@ END {
 	print "\tstroke: none;"
 	print "}"
 
-	split(style["pallete"], pallete, ",")
+	split(style["palette"], palette, ",")
 
 	# Print color scheme definitions for branches.
 	for (i = 0; i < len["branches"]; i++) {
 		printf ".branch-" normalize(branches[i,"name"]) " {"
-		# Reuse pallete (except primary colour which is reserved for master).
-		p = (i - 1) % (count(pallete) - 1) + 2
-		printf "stroke: " pallete[p] "; fill: " pallete[p] "}\n"
+		# Reuse palette (except primary colour which is reserved for master).
+		p = (i - 1) % (count(palette) - 1) + 2
+		printf "stroke: " palette[p] "; fill: " palette[p] "}\n"
 	}
 
 	print "]]></style>"
