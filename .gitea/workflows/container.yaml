@@ -1,9 +1,5 @@
 name: Grawkit Play Container Build
-on:
-  push:
-    paths:
-      - 'grawkit'
-      - 'play/**'
+on: push
 env:
   CONTAINER_NAME: ${{ github.repository_owner }}/grawkit-play
   CONTAINER_TAG: latest
