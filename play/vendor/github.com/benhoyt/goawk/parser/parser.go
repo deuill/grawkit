@@ -13,6 +13,7 @@ import (
 
 	"github.com/benhoyt/goawk/internal/ast"
 	"github.com/benhoyt/goawk/internal/compiler"
+	"github.com/benhoyt/goawk/internal/resolver"
 	. "github.com/benhoyt/goawk/lexer"
 )
 
@@ -45,35 +46,49 @@ type ParserConfig struct {
 	Funcs map[string]interface{}
 }
 
+func (c *ParserConfig) toResolverConfig() *resolver.Config {
+	if c == nil {
+		return nil
+	}
+	return &resolver.Config{
+		DebugTypes:  c.DebugTypes,
+		DebugWriter: c.DebugWriter,
+		Funcs:       c.Funcs,
+	}
+}
+
 // ParseProgram parses an entire AWK program, returning the *Program
 // abstract syntax tree or a *ParseError on error. "config" describes
 // the parser configuration (and is allowed to be nil).
 func ParseProgram(src []byte, config *ParserConfig) (prog *Program, err error) {
 	defer func() {
-		// The parser uses panic with a *ParseError to signal parsing
-		// errors internally, and they're caught here. This
-		// significantly simplifies the recursive descent calls as
-		// we don't have to check errors everywhere.
+		// The parser and resolver use panic with an *ast.PositionError to signal parsing
+		// errors internally, and they're caught here. This significantly simplifies
+		// the recursive descent calls as we don't have to check errors everywhere.
 		if r := recover(); r != nil {
-			// Convert to ParseError or re-panic
-			err = r.(*ParseError)
+			// Convert to PositionError or re-panic
+			posError := *r.(*ast.PositionError)
+			err = &ParseError{
+				Position: posError.Position,
+				Message:  posError.Message,
+			}
 		}
 	}()
 	lexer := NewLexer(src)
 	p := parser{lexer: lexer}
-	if config != nil {
-		p.debugTypes = config.DebugTypes
-		p.debugWriter = config.DebugWriter
-		p.nativeFuncs = config.Funcs
-	}
-	p.initResolve()
+	p.multiExprs = make(map[*ast.MultiExpr]Position, 3)
+
 	p.next() // initialize p.tok
 
 	// Parse into abstract syntax tree
-	prog = p.program()
+	astProg := p.program()
+
+	// Resolve variable scopes and types
+	prog = &Program{}
+	prog.ResolvedProgram = *resolver.Resolve(astProg, config.toResolverConfig())
 
 	// Compile to virtual machine code
-	prog.Compiled, err = compiler.Compile(prog.toAST())
+	prog.Compiled, err = compiler.Compile(&prog.ResolvedProgram)
 	return prog, err
 }
 
@@ -83,37 +98,20 @@ type Program struct {
 	// but are exported for the interpreter (Program itself needs to
 	// be exported in package "parser", otherwise these could live in
 	// "internal/ast".)
-	Begin     []ast.Stmts
-	Actions   []ast.Action
-	End       []ast.Stmts
-	Functions []ast.Function
-	Scalars   map[string]int
-	Arrays    map[string]int
-	Compiled  *compiler.Program
+	resolver.ResolvedProgram
+	Compiled *compiler.Program
 }
 
 // String returns an indented, pretty-printed version of the parsed
 // program.
 func (p *Program) String() string {
-	return p.toAST().String()
+	return p.ResolvedProgram.Program.String()
 }
 
 // Disassemble writes a human-readable form of the program's virtual machine
 // instructions to writer.
 func (p *Program) Disassemble(writer io.Writer) error {
 	return p.Compiled.Disassemble(writer)
-}
-
-// toAST converts the *Program to an *ast.Program.
-func (p *Program) toAST() *ast.Program {
-	return &ast.Program{
-		Begin:     p.Begin,
-		Actions:   p.Actions,
-		End:       p.End,
-		Functions: p.Functions,
-		Scalars:   p.Scalars,
-		Arrays:    p.Arrays,
-	}
 }
 
 // Parser state
@@ -131,28 +129,36 @@ type parser struct {
 	loopDepth int    // current loop depth (0 if not in any loops)
 
 	// Variable tracking and resolving
-	locals     map[string]bool                // current function's locals (for determining scope)
-	varTypes   map[string]map[string]typeInfo // map of func name to var name to type
-	varRefs    []varRef                       // all variable references (usually scalars)
-	arrayRefs  []arrayRef                     // all array references
-	multiExprs map[*ast.MultiExpr]Position    // tracks comma-separated expressions
-
-	// Function tracking
-	functions   map[string]int // map of function name to index
-	userCalls   []userCall     // record calls so we can resolve them later
-	nativeFuncs map[string]interface{}
-
-	// Configuration and debugging
-	debugTypes  bool      // show variable types for debugging
-	debugWriter io.Writer // where the debug output goes
+	multiExprs map[*ast.MultiExpr]Position // tracks comma-separated expressions
 }
 
 // Parse an entire AWK program.
-func (p *parser) program() *Program {
-	prog := &Program{}
-	p.optionalNewlines()
+func (p *parser) program() *ast.Program {
+	prog := &ast.Program{}
+
+	// Terminator "(SEMICOLON|NEWLINE) NEWLINE*" is required after each item
+	// with two exceptions where it is optional:
+	//
+	// 1. after the last item, or
+	// 2. when the previous item ended with a closing brace.
+	//
+	// NOTE: The second exception does not seem to be correct according to
+	// the POSIX grammar definition, but it is the common behaviour for the
+	// major AWK implementations.
+	needsTerminator := false
+
 	for p.tok != EOF {
+		if needsTerminator {
+			if !p.matches(NEWLINE, SEMICOLON) {
+				panic(p.errorf("expected ; or newline between items"))
+			}
+			p.next()
+			needsTerminator = false
+		}
+		p.optionalNewlines()
 		switch p.tok {
+		case EOF:
+			break
 		case BEGIN:
 			p.next()
 			prog.Begin = append(prog.Begin, p.stmtsBrace())
@@ -161,7 +167,6 @@ func (p *parser) program() *Program {
 			prog.End = append(prog.End, p.stmtsBrace())
 		case FUNCTION:
 			function := p.function()
-			p.addFunction(function.Name, len(prog.Functions))
 			prog.Functions = append(prog.Functions, function)
 		default:
 			p.inAction = true
@@ -170,23 +175,22 @@ func (p *parser) program() *Program {
 			if !p.matches(LBRACE, EOF) {
 				pattern = append(pattern, p.expr())
 			}
-			if !p.matches(LBRACE, EOF, NEWLINE) {
+			if !p.matches(LBRACE, EOF, NEWLINE, SEMICOLON) {
 				p.commaNewlines()
 				pattern = append(pattern, p.expr())
 			}
 			// Or an empty action (equivalent to { print $0 })
-			action := ast.Action{pattern, nil}
+			action := &ast.Action{pattern, nil}
 			if p.tok == LBRACE {
 				action.Stmts = p.stmtsBrace()
+			} else {
+				needsTerminator = true
 			}
 			prog.Actions = append(prog.Actions, action)
 			p.inAction = false
 		}
-		p.optionalNewlines()
 	}
 
-	p.resolveUserCalls(prog)
-	p.resolveVars(prog)
 	p.checkMultiExprs()
 
 	return prog
@@ -213,6 +217,10 @@ func (p *parser) stmtsBrace() ast.Stmts {
 	p.optionalNewlines()
 	ss := []ast.Stmt{}
 	for p.tok != RBRACE && p.tok != EOF {
+		if p.matches(SEMICOLON, NEWLINE) {
+			p.next()
+			continue
+		}
 		ss = append(ss, p.stmt())
 	}
 	p.expect(RBRACE)
@@ -224,6 +232,7 @@ func (p *parser) stmtsBrace() ast.Stmts {
 
 // Parse a "simple" statement (eg: allowed in a for loop init clause).
 func (p *parser) simpleStmt() ast.Stmt {
+	startPos := p.pos
 	switch p.tok {
 	case PRINT, PRINTF:
 		op := p.tok
@@ -244,17 +253,16 @@ func (p *parser) simpleStmt() ast.Stmt {
 			dest = p.expr()
 		}
 		if op == PRINT {
-			return &ast.PrintStmt{args, redirect, dest}
+			return &ast.PrintStmt{args, redirect, dest, startPos, p.pos}
 		} else {
 			if len(args) == 0 {
 				panic(p.errorf("expected printf args, got none"))
 			}
-			return &ast.PrintfStmt{args, redirect, dest}
+			return &ast.PrintfStmt{args, redirect, dest, startPos, p.pos}
 		}
 	case DELETE:
 		p.next()
-		ref := p.arrayRef(p.val, p.pos)
-		p.expect(NAME)
+		name, namePos := p.expectName()
 		var index []ast.Expr
 		if p.tok == LBRACKET {
 			p.next()
@@ -264,20 +272,18 @@ func (p *parser) simpleStmt() ast.Stmt {
 			}
 			p.expect(RBRACKET)
 		}
-		return &ast.DeleteStmt{ref, index}
-	case IF, FOR, WHILE, DO, BREAK, CONTINUE, NEXT, EXIT, RETURN:
+		return &ast.DeleteStmt{name, namePos, index, startPos, p.pos}
+	case IF, FOR, WHILE, DO, BREAK, CONTINUE, NEXT, NEXTFILE, EXIT, RETURN:
 		panic(p.errorf("expected print/printf, delete, or expression"))
 	default:
-		return &ast.ExprStmt{p.expr()}
+		return &ast.ExprStmt{p.expr(), startPos, p.pos}
 	}
 }
 
 // Parse any top-level statement.
 func (p *parser) stmt() ast.Stmt {
-	for p.matches(SEMICOLON, NEWLINE) {
-		p.next()
-	}
 	var s ast.Stmt
+	startPos := p.pos
 	switch p.tok {
 	case IF:
 		p.next()
@@ -285,6 +291,7 @@ func (p *parser) stmt() ast.Stmt {
 		cond := p.expr()
 		p.expect(RPAREN)
 		p.optionalNewlines()
+		bodyStart := p.pos
 		body := p.stmts()
 		p.optionalNewlines()
 		var elseBody ast.Stmts
@@ -293,7 +300,7 @@ func (p *parser) stmt() ast.Stmt {
 			p.optionalNewlines()
 			elseBody = p.stmts()
 		}
-		s = &ast.IfStmt{cond, body, elseBody}
+		s = &ast.IfStmt{cond, bodyStart, body, elseBody, startPos, p.pos}
 	case FOR:
 		// Parse for statement, either "for in" or C-like for loop.
 		//
@@ -327,8 +334,18 @@ func (p *parser) stmt() ast.Stmt {
 			if !ok {
 				panic(p.errorf("expected 'for (var in array) ...'"))
 			}
+			bodyStart := p.pos
 			body := p.loopStmts()
-			s = &ast.ForInStmt{varExpr, inExpr.Array, body}
+			s = &ast.ForInStmt{
+				Var:       varExpr.Name,
+				VarPos:    varExpr.Pos,
+				Array:     inExpr.Array,
+				ArrayPos:  inExpr.ArrayPos,
+				BodyStart: bodyStart,
+				Body:      body,
+				Start:     startPos,
+				End:       p.pos,
+			}
 		} else {
 			// Match: for ([pre]; [cond]; [post]) body
 			p.expect(SEMICOLON)
@@ -345,8 +362,9 @@ func (p *parser) stmt() ast.Stmt {
 			}
 			p.expect(RPAREN)
 			p.optionalNewlines()
+			bodyStart := p.pos
 			body := p.loopStmts()
-			s = &ast.ForStmt{pre, cond, post, body}
+			s = &ast.ForStmt{pre, cond, post, bodyStart, body, startPos, p.pos}
 		}
 	case WHILE:
 		p.next()
@@ -354,42 +372,50 @@ func (p *parser) stmt() ast.Stmt {
 		cond := p.expr()
 		p.expect(RPAREN)
 		p.optionalNewlines()
+		bodyStart := p.pos
 		body := p.loopStmts()
-		s = &ast.WhileStmt{cond, body}
+		s = &ast.WhileStmt{cond, bodyStart, body, startPos, p.pos}
 	case DO:
 		p.next()
 		p.optionalNewlines()
 		body := p.loopStmts()
+		p.optionalNewlines()
 		p.expect(WHILE)
 		p.expect(LPAREN)
 		cond := p.expr()
 		p.expect(RPAREN)
-		s = &ast.DoWhileStmt{body, cond}
+		s = &ast.DoWhileStmt{body, cond, startPos, p.pos}
 	case BREAK:
 		if p.loopDepth == 0 {
 			panic(p.errorf("break must be inside a loop body"))
 		}
 		p.next()
-		s = &ast.BreakStmt{}
+		s = &ast.BreakStmt{startPos, p.pos}
 	case CONTINUE:
 		if p.loopDepth == 0 {
 			panic(p.errorf("continue must be inside a loop body"))
 		}
 		p.next()
-		s = &ast.ContinueStmt{}
+		s = &ast.ContinueStmt{startPos, p.pos}
 	case NEXT:
 		if !p.inAction && p.funcName == "" {
 			panic(p.errorf("next can't be inside BEGIN or END"))
 		}
 		p.next()
-		s = &ast.NextStmt{}
+		s = &ast.NextStmt{startPos, p.pos}
+	case NEXTFILE:
+		if !p.inAction && p.funcName == "" {
+			panic(p.errorf("nextfile can't be inside BEGIN or END"))
+		}
+		p.next()
+		s = &ast.NextfileStmt{startPos, p.pos}
 	case EXIT:
 		p.next()
 		var status ast.Expr
 		if !p.matches(NEWLINE, SEMICOLON, RBRACE) {
 			status = p.expr()
 		}
-		s = &ast.ExitStmt{status}
+		s = &ast.ExitStmt{status, startPos, p.pos}
 	case RETURN:
 		if p.funcName == "" {
 			panic(p.errorf("return must be inside a function"))
@@ -399,10 +425,10 @@ func (p *parser) stmt() ast.Stmt {
 		if !p.matches(NEWLINE, SEMICOLON, RBRACE) {
 			value = p.expr()
 		}
-		s = &ast.ReturnStmt{value}
+		s = &ast.ReturnStmt{value, startPos, p.pos}
 	case LBRACE:
 		body := p.stmtsBrace()
-		s = &ast.BlockStmt{body}
+		s = &ast.BlockStmt{body, startPos, p.pos}
 	default:
 		s = p.simpleStmt()
 	}
@@ -429,22 +455,18 @@ func (p *parser) loopStmts() ast.Stmts {
 // Parse a function definition and body. As it goes, this resolves
 // the local variable indexes and tracks which parameters are array
 // parameters.
-func (p *parser) function() ast.Function {
+func (p *parser) function() *ast.Function {
 	if p.funcName != "" {
 		// Should never actually get here (FUNCTION token is only
 		// handled at the top level), but just in case.
 		panic(p.errorf("can't nest functions"))
 	}
 	p.next()
-	name := p.val
-	if _, ok := p.functions[name]; ok {
-		panic(p.errorf("function %q already defined", name))
-	}
-	p.expect(NAME)
+	name, funcNamePos := p.expectName()
 	p.expect(LPAREN)
 	first := true
 	params := make([]string, 0, 7) // pre-allocate some to reduce allocations
-	p.locals = make(map[string]bool, 7)
+	locals := make(map[string]bool, 7)
 	for p.tok != RPAREN {
 		if !first {
 			p.commaNewlines()
@@ -454,23 +476,24 @@ func (p *parser) function() ast.Function {
 		if param == name {
 			panic(p.errorf("can't use function name as parameter name"))
 		}
-		if p.locals[param] {
+		if locals[param] {
 			panic(p.errorf("duplicate parameter name %q", param))
 		}
 		p.expect(NAME)
 		params = append(params, param)
-		p.locals[param] = true
+		locals[param] = true
 	}
 	p.expect(RPAREN)
 	p.optionalNewlines()
 
 	// Parse the body
-	p.startFunction(name, params)
-	body := p.stmtsBrace()
-	p.stopFunction()
-	p.locals = nil
+	p.funcName = name
 
-	return ast.Function{name, params, nil, body}
+	body := p.stmtsBrace()
+
+	p.funcName = ""
+
+	return &ast.Function{name, params, body, funcNamePos}
 }
 
 // Parse expressions separated by commas: args to print[f] or user
@@ -520,35 +543,55 @@ func (p *parser) getLine() ast.Expr {
 // An lvalue is a variable name, an array[expr] index expression, or
 // an $expr field expression.
 func (p *parser) _assign(higher func() ast.Expr) ast.Expr {
+	leftPos := p.pos
 	expr := higher()
-	_, isNamedField := expr.(*ast.NamedFieldExpr)
-	if (isNamedField || ast.IsLValue(expr)) && p.matches(ASSIGN, ADD_ASSIGN, DIV_ASSIGN,
-		MOD_ASSIGN, MUL_ASSIGN, POW_ASSIGN, SUB_ASSIGN) {
+	if p.matches(ASSIGN, ADD_ASSIGN, DIV_ASSIGN, MOD_ASSIGN, MUL_ASSIGN, POW_ASSIGN, SUB_ASSIGN) {
+		_, isNamedField := expr.(*ast.NamedFieldExpr)
 		if isNamedField {
 			panic(p.errorf("assigning @ expression not supported"))
 		}
 		op := p.tok
 		p.next()
 		right := p._assign(higher)
-		switch op {
-		case ASSIGN:
-			return &ast.AssignExpr{expr, right}
-		case ADD_ASSIGN:
-			op = ADD
-		case DIV_ASSIGN:
-			op = DIV
-		case MOD_ASSIGN:
-			op = MOD
-		case MUL_ASSIGN:
-			op = MUL
-		case POW_ASSIGN:
-			op = POW
-		case SUB_ASSIGN:
-			op = SUB
+		if !ast.IsLValue(expr) {
+			// Partial backtracking to allow expressions like "1 && x=1",
+			// which isn't really valid, as assignments are lower-precedence
+			// than binary operators, but onetrueawk, Gawk, and mawk all
+			// support this for logical, match and comparison operators. See
+			// issue #166.
+			binary, isBinary := expr.(*ast.BinaryExpr)
+			if isBinary && ast.IsLValue(binary.Right) {
+				switch binary.Op {
+				case AND, OR, MATCH, NOT_MATCH, EQUALS, NOT_EQUALS, LESS, LTE, GTE, GREATER:
+					assign := makeAssign(binary.Right, op, right)
+					return &ast.BinaryExpr{binary.Left, binary.Op, assign}
+				}
+			}
+			panic(ast.PosErrorf(leftPos, "expected lvalue before %s", op))
 		}
-		return &ast.AugAssignExpr{expr, op, right}
+		return makeAssign(expr, op, right)
 	}
 	return expr
+}
+
+func makeAssign(left ast.Expr, op Token, right ast.Expr) ast.Expr {
+	switch op {
+	case ASSIGN:
+		return &ast.AssignExpr{left, right}
+	case ADD_ASSIGN:
+		op = ADD
+	case DIV_ASSIGN:
+		op = DIV
+	case MOD_ASSIGN:
+		op = MOD
+	case MUL_ASSIGN:
+		op = MUL
+	case POW_ASSIGN:
+		op = POW
+	case SUB_ASSIGN:
+		op = SUB
+	}
+	return &ast.AugAssignExpr{left, op, right}
 }
 
 // Parse a ?: conditional expression:
@@ -593,9 +636,8 @@ func (p *parser) _in(higher func() ast.Expr) ast.Expr {
 	expr := higher()
 	for p.tok == IN {
 		p.next()
-		ref := p.arrayRef(p.val, p.pos)
-		p.expect(NAME)
-		expr = &ast.InExpr{[]ast.Expr{expr}, ref}
+		name, namePos := p.expectName()
+		expr = &ast.InExpr{[]ast.Expr{expr}, name, namePos}
 	}
 	return expr
 }
@@ -654,27 +696,13 @@ func (p *parser) mul() ast.Expr {
 
 func (p *parser) pow() ast.Expr {
 	// Note that pow (expr ^ expr) is right-associative
-	expr := p.preIncr()
+	expr := p.postIncr()
 	if p.tok == POW {
 		p.next()
 		right := p.pow()
 		return &ast.BinaryExpr{expr, POW, right}
 	}
 	return expr
-}
-
-func (p *parser) preIncr() ast.Expr {
-	if p.tok == INCR || p.tok == DECR {
-		op := p.tok
-		p.next()
-		exprPos := p.pos
-		expr := p.preIncr()
-		if !ast.IsLValue(expr) {
-			panic(p.posErrorf(exprPos, "expected lvalue after ++ or --"))
-		}
-		return &ast.IncrExpr{expr, op, true}
-	}
-	return p.postIncr()
 }
 
 func (p *parser) postIncr() ast.Expr {
@@ -698,7 +726,7 @@ func (p *parser) primary() ast.Expr {
 	case STRING:
 		s := p.val
 		p.next()
-		return &ast.StrExpr{s}
+		return &ast.StrExpr{Value: s}
 	case DIV, DIV_ASSIGN:
 		// If we get to DIV or DIV_ASSIGN as a primary expression,
 		// it's actually a regex.
@@ -706,7 +734,16 @@ func (p *parser) primary() ast.Expr {
 		return &ast.RegExpr{regex}
 	case DOLLAR:
 		p.next()
-		return &ast.FieldExpr{p.primary()}
+		var expr ast.Expr = &ast.FieldExpr{p.primary()}
+		// Post-increment operators have lower precedence than primary
+		// expressions by default, except for field expressions with
+		// post-increments (e.g., $$1++ = $($1++), NOT $($1)++).
+		if p.tok == INCR || p.tok == DECR {
+			op := p.tok
+			p.next()
+			expr = &ast.IncrExpr{expr, op, false}
+		}
+		return expr
 	case AT:
 		p.next()
 		return &ast.NamedFieldExpr{p.primary()}
@@ -714,10 +751,17 @@ func (p *parser) primary() ast.Expr {
 		op := p.tok
 		p.next()
 		return &ast.UnaryExpr{op, p.pow()}
-	case NAME:
-		name := p.val
-		namePos := p.pos
+	case INCR, DECR:
+		op := p.tok
 		p.next()
+		exprPos := p.pos
+		expr := p.optionalLValue()
+		if expr == nil {
+			panic(ast.PosErrorf(exprPos, "expected lvalue after %s", op))
+		}
+		return &ast.IncrExpr{expr, op, true}
+	case NAME:
+		name, namePos := p.expectName()
 		if p.tok == LBRACKET {
 			// a[x] or a[x, y] array index expression
 			p.next()
@@ -726,17 +770,14 @@ func (p *parser) primary() ast.Expr {
 				panic(p.errorf("expected expression instead of ]"))
 			}
 			p.expect(RBRACKET)
-			return &ast.IndexExpr{p.arrayRef(name, namePos), index}
+			return &ast.IndexExpr{name, namePos, index}
 		} else if p.tok == LPAREN && !p.lexer.HadSpace() {
-			if p.locals[name] {
-				panic(p.errorf("can't call local variable %q as function", name))
-			}
 			// Grammar requires no space between function name and
 			// left paren for user function calls, hence the funky
 			// lexer.HadSpace() method.
 			return p.userCall(name, namePos)
 		}
-		return p.varRef(name, namePos)
+		return &ast.VarExpr{name, namePos}
 	case LPAREN:
 		parenPos := p.pos
 		p.next()
@@ -746,15 +787,14 @@ func (p *parser) primary() ast.Expr {
 			panic(p.errorf("expected expression, not %s", p.tok))
 		case 1:
 			p.expect(RPAREN)
-			return exprs[0]
+			return &ast.GroupingExpr{exprs[0]}
 		default:
 			// Multi-dimensional array "in" requires parens around index
 			p.expect(RPAREN)
 			if p.tok == IN {
 				p.next()
-				ref := p.arrayRef(p.val, p.pos)
-				p.expect(NAME)
-				return &ast.InExpr{exprs, ref}
+				name, namePos := p.expectName()
+				return &ast.InExpr{exprs, name, namePos}
 			}
 			// MultiExpr is used as a pseudo-expression for print[f] parsing.
 			return p.multiExpr(exprs, parenPos)
@@ -785,7 +825,7 @@ func (p *parser) primary() ast.Expr {
 			inPos := p.pos
 			in := p.expr()
 			if !ast.IsLValue(in) {
-				panic(p.posErrorf(inPos, "3rd arg to sub/gsub must be lvalue"))
+				panic(ast.PosErrorf(inPos, "3rd arg to sub/gsub must be lvalue"))
 			}
 			args = append(args, in)
 		}
@@ -796,9 +836,8 @@ func (p *parser) primary() ast.Expr {
 		p.expect(LPAREN)
 		str := p.expr()
 		p.commaNewlines()
-		ref := p.arrayRef(p.val, p.pos)
-		p.expect(NAME)
-		args := []ast.Expr{str, ref}
+		name, namePos := p.expectName()
+		args := []ast.Expr{str, &ast.VarExpr{name, namePos}}
 		if p.tok == COMMA {
 			p.commaNewlines()
 			args = append(args, p.regexStr(p.expr))
@@ -902,9 +941,7 @@ func (p *parser) optionalLValue() ast.Expr {
 			// User function call, e.g., foo() not lvalue.
 			return nil
 		}
-		name := p.val
-		namePos := p.pos
-		p.next()
+		name, namePos := p.expectName()
 		if p.tok == LBRACKET {
 			// a[x] or a[x, y] array index expression
 			p.next()
@@ -913,9 +950,9 @@ func (p *parser) optionalLValue() ast.Expr {
 				panic(p.errorf("expected expression instead of ]"))
 			}
 			p.expect(RBRACKET)
-			return &ast.IndexExpr{p.arrayRef(name, namePos), index}
+			return &ast.IndexExpr{name, namePos, index}
 		}
-		return p.varRef(name, namePos)
+		return &ast.VarExpr{name, namePos}
 	case DOLLAR:
 		p.next()
 		return &ast.FieldExpr{p.primary()}
@@ -930,7 +967,7 @@ func (p *parser) optionalLValue() ast.Expr {
 func (p *parser) regexStr(parse func() ast.Expr) ast.Expr {
 	if p.matches(DIV, DIV_ASSIGN) {
 		regex := p.nextRegex()
-		return &ast.StrExpr{regex}
+		return &ast.StrExpr{Value: regex, Regex: true}
 	}
 	return parse()
 }
@@ -987,7 +1024,7 @@ func (p *parser) nextRegex() string {
 		panic(p.errorf("%s", p.val))
 	}
 	regex := p.val
-	_, err := regexp.Compile(regex)
+	_, err := regexp.Compile(compiler.AddRegexFlags(regex))
 	if err != nil {
 		panic(p.errorf("%v", err))
 	}
@@ -1001,6 +1038,13 @@ func (p *parser) expect(tok Token) {
 		panic(p.errorf("expected %s instead of %s", tok, p.tok))
 	}
 	p.next()
+}
+
+// Ensure current token is a name, parse it, and return name and position.
+func (p *parser) expectName() (string, Position) {
+	name, pos := p.val, p.pos
+	p.expect(NAME)
+	return name, pos
 }
 
 // Return true iff current token matches one of the given operators,
@@ -1017,13 +1061,7 @@ func (p *parser) matches(operators ...Token) bool {
 // Format given string and args with Sprintf and return *ParseError
 // with that message and the current position.
 func (p *parser) errorf(format string, args ...interface{}) error {
-	return p.posErrorf(p.pos, format, args...)
-}
-
-// Like errorf, but with an explicit position.
-func (p *parser) posErrorf(pos Position, format string, args ...interface{}) error {
-	message := fmt.Sprintf(format, args...)
-	return &ParseError{pos, message}
+	return ast.PosErrorf(p.pos, format, args...)
 }
 
 // Parse call to a user-defined function (and record call site for
@@ -1037,12 +1075,37 @@ func (p *parser) userCall(name string, pos Position) *ast.UserCallExpr {
 			p.commaNewlines()
 		}
 		arg := p.expr()
-		p.processUserCallArg(name, arg, i)
 		args = append(args, arg)
 		i++
 	}
 	p.expect(RPAREN)
-	call := &ast.UserCallExpr{false, -1, name, args} // index is resolved later
-	p.recordUserCall(call, pos)
-	return call
+	return &ast.UserCallExpr{name, args, pos}
+}
+
+// Record a "multi expression" (comma-separated pseudo-expression
+// used to allow commas around print/printf arguments).
+func (p *parser) multiExpr(exprs []ast.Expr, pos Position) ast.Expr {
+	expr := &ast.MultiExpr{exprs}
+	p.multiExprs[expr] = pos
+	return expr
+}
+
+// Mark the multi expression as used (by a print/printf statement).
+func (p *parser) useMultiExpr(expr *ast.MultiExpr) {
+	delete(p.multiExprs, expr)
+}
+
+// Check that there are no unused multi expressions (syntax error).
+func (p *parser) checkMultiExprs() {
+	if len(p.multiExprs) == 0 {
+		return
+	}
+	// Show error on first comma-separated expression
+	min := Position{1000000000, 1000000000}
+	for _, pos := range p.multiExprs {
+		if pos.Line < min.Line || pos.Line == min.Line && pos.Column < min.Column {
+			min = pos
+		}
+	}
+	panic(ast.PosErrorf(min, "unexpected comma-separated expression"))
 }

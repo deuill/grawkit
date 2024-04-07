@@ -1,6 +1,6 @@
 package compiler
 
-//go:generate go run golang.org/x/tools/cmd/stringer@v0.1.8 -type=Opcode,AugOp,BuiltinOp
+//go:generate go run golang.org/x/tools/cmd/stringer@v0.10.0 -type=Opcode,AugOp,BuiltinOp
 
 // Opcode represents a single virtual machine instruction (or argument). The
 // comments beside each opcode show any arguments that instruction consumes.
@@ -22,6 +22,7 @@ const (
 	Dupe
 	Drop
 	Swap
+	Rote
 
 	// Fetch a field, variable, or array item
 	Field
@@ -107,15 +108,18 @@ const (
 	JumpLessOrEqual    // offset
 	JumpGreaterOrEqual // offset
 	Next
+	Nextfile
 	Exit
+	ExitStatus
 	ForIn // varScope varIndex arrayScope arrayIndex offset
 	BreakForIn
 
 	// Builtin functions
-	CallBuiltin  // builtinOp
-	CallSplit    // arrayScope arrayIndex
-	CallSplitSep // arrayScope arrayIndex
-	CallSprintf  // numArgs
+	CallBuiltin     // builtinOp
+	CallLengthArray // arrayScope arrayIndex
+	CallSplit       // arrayScope arrayIndex
+	CallSplitSep    // arrayScope arrayIndex
+	CallSprintf     // numArgs
 
 	// User and native functions
 	CallUser   // funcIndex numArrayArgs [arrayScope1 arrayIndex1 ...]

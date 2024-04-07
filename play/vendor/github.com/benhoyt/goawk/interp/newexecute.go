@@ -6,6 +6,7 @@ import (
 	"context"
 	"math"
 
+	"github.com/benhoyt/goawk/internal/resolver"
 	"github.com/benhoyt/goawk/parser"
 )
 
@@ -60,6 +61,29 @@ func (p *Interpreter) Execute(config *Config) (int, error) {
 	return p.interp.executeAll()
 }
 
+// Array returns a map representing the items in the named AWK array. AWK
+// numbers are included as type float64, strings (including "numeric strings")
+// are included as type string. If the named array does not exist, return nil.
+func (p *Interpreter) Array(name string) map[string]interface{} {
+	index, exists := p.interp.arrayIndexes[name]
+	if !exists {
+		return nil
+	}
+	array := p.interp.array(resolver.Global, index)
+	result := make(map[string]interface{}, len(array))
+	for k, v := range array {
+		switch v.typ {
+		case typeNum:
+			result[k] = v.n
+		case typeStr, typeNumStr:
+			result[k] = v.s
+		default:
+			result[k] = ""
+		}
+	}
+	return result
+}
+
 func (p *interp) resetCore() {
 	p.scanner = nil
 	for k := range p.scanners {
@@ -71,9 +95,6 @@ func (p *interp) resetCore() {
 	}
 	for k := range p.outputStreams {
 		delete(p.outputStreams, k)
-	}
-	for k := range p.commands {
-		delete(p.commands, k)
 	}
 
 	p.sp = 0

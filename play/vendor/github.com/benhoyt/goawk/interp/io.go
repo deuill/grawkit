@@ -8,7 +8,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"regexp"
@@ -17,7 +16,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/benhoyt/goawk/internal/ast"
+	"github.com/benhoyt/goawk/internal/resolver"
 	. "github.com/benhoyt/goawk/lexer"
 )
 
@@ -97,26 +96,6 @@ func (p *interp) writeCSV(output io.Writer, fields []string) error {
 	return nil
 }
 
-// Implement a buffered version of WriteCloser so output is buffered
-// when redirecting to a file (eg: print >"out")
-type bufferedWriteCloser struct {
-	*bufio.Writer
-	io.Closer
-}
-
-func newBufferedWriteCloser(w io.WriteCloser) *bufferedWriteCloser {
-	writer := bufio.NewWriterSize(w, outputBufSize)
-	return &bufferedWriteCloser{writer, w}
-}
-
-func (wc *bufferedWriteCloser) Close() error {
-	err := wc.Writer.Flush()
-	if err != nil {
-		return err
-	}
-	return wc.Closer.Close()
-}
-
 // Determine the output stream for given redirect token and
 // destination (file or pipe name)
 func (p *interp) getOutputStream(redirect Token, destValue value) (io.Writer, error) {
@@ -145,13 +124,13 @@ func (p *interp) getOutputStream(redirect Token, destValue value) (io.Writer, er
 		} else {
 			flags |= os.O_APPEND
 		}
-		w, err := os.OpenFile(name, flags, 0644)
+		f, err := os.OpenFile(name, flags, 0644)
 		if err != nil {
 			return nil, newError("output redirection error: %s", err)
 		}
-		buffered := newBufferedWriteCloser(w)
-		p.outputStreams[name] = buffered
-		return buffered, nil
+		out := newOutFileStream(f, outputBufSize)
+		p.outputStreams[name] = out
+		return out, nil
 
 	case PIPE:
 		// Pipe to command
@@ -159,22 +138,16 @@ func (p *interp) getOutputStream(redirect Token, destValue value) (io.Writer, er
 			return nil, newError("can't write to pipe due to NoExec")
 		}
 		cmd := p.execShell(name)
-		w, err := cmd.StdinPipe()
-		if err != nil {
-			return nil, newError("error connecting to stdin pipe: %v", err)
-		}
 		cmd.Stdout = p.output
 		cmd.Stderr = p.errorOutput
 		p.flushOutputAndError() // ensure synchronization
-		err = cmd.Start()
+		out, err := newOutCmdStream(cmd)
 		if err != nil {
 			p.printErrorf("%s\n", err)
-			return ioutil.Discard, nil
+			out = newOutNullStream()
 		}
-		p.commands[name] = cmd
-		buffered := newBufferedWriteCloser(w)
-		p.outputStreams[name] = buffered
-		return buffered, nil
+		p.outputStreams[name] = out
+		return out, nil
 
 	default:
 		// Should never happen
@@ -214,13 +187,14 @@ func (p *interp) getInputScannerFile(name string) (*bufio.Scanner, error) {
 	if p.noFileReads {
 		return nil, newError("can't read from file due to NoFileReads")
 	}
-	r, err := os.Open(name)
+	f, err := os.Open(name)
 	if err != nil {
 		return nil, err // *os.PathError is handled by caller (getline returns -1)
 	}
-	scanner := p.newScanner(r, make([]byte, inputBufSize))
+	in := newInFileStream(f)
+	scanner := p.newScanner(in, make([]byte, inputBufSize))
 	p.scanners[name] = scanner
-	p.inputStreams[name] = r
+	p.inputStreams[name] = in
 	return scanner, nil
 }
 
@@ -238,19 +212,15 @@ func (p *interp) getInputScannerPipe(name string) (*bufio.Scanner, error) {
 	cmd := p.execShell(name)
 	cmd.Stdin = p.stdin
 	cmd.Stderr = p.errorOutput
-	r, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, newError("error connecting to stdout pipe: %v", err)
-	}
 	p.flushOutputAndError() // ensure synchronization
-	err = cmd.Start()
+	in, err := newInCmdStream(cmd)
 	if err != nil {
 		p.printErrorf("%s\n", err)
 		return bufio.NewScanner(strings.NewReader("")), nil
 	}
-	scanner := p.newScanner(r, make([]byte, inputBufSize))
-	p.commands[name] = cmd
-	p.inputStreams[name] = r
+
+	scanner := p.newScanner(in, make([]byte, inputBufSize))
+	p.inputStreams[name] = in
 	p.scanners[name] = scanner
 	return scanner, nil
 }
@@ -294,7 +264,7 @@ func (p *interp) setFieldNames(names []string) {
 	p.fieldIndexes = nil // clear name-to-index cache
 
 	// Populate FIELDS array (mapping of field indexes to field names).
-	fieldsArray := p.array(ast.ScopeGlobal, p.program.Arrays["FIELDS"])
+	fieldsArray := p.array(resolver.Global, p.arrayIndexes["FIELDS"])
 	for k := range fieldsArray {
 		delete(fieldsArray, k)
 	}
@@ -648,6 +618,24 @@ func (p *interp) setLine(line string, isTrueStr bool) {
 	p.reparseCSV = true
 }
 
+// Splits on FS as a regex, appending each field to fields and returning the
+// new slice (for efficiency).
+func (p *interp) splitOnFieldSepRegex(fields []string, line string) []string {
+	indices := p.fieldSepRegex.FindAllStringIndex(line, -1)
+	prevIndex := 0
+	for _, match := range indices {
+		start, end := match[0], match[1]
+		// skip empty matches (https://www.austingroupbugs.net/view.php?id=1468)
+		if start == end {
+			continue
+		}
+		fields = append(fields, line[prevIndex:start])
+		prevIndex = end
+	}
+	fields = append(fields, line[prevIndex:])
+	return fields
+}
+
 // Ensure that the current line is parsed into fields, splitting it
 // into fields if it hasn't been already
 func (p *interp) ensureFields() {
@@ -684,7 +672,7 @@ func (p *interp) ensureFields() {
 		p.fields = strings.Split(p.line, p.fieldSep)
 	default:
 		// Split on FS as a regex
-		p.fields = p.fieldSepRegex.Split(p.line, -1)
+		p.fields = p.splitOnFieldSepRegex(p.fields[:0], p.line)
 	}
 
 	// Special case for when RS=="" and FS is single character,
@@ -732,8 +720,8 @@ func (p *interp) nextLine() (string, error) {
 				// getArrayValue() here as it would set the value if
 				// not present
 				index := strconv.Itoa(p.filenameIndex)
-				argvIndex := p.program.Arrays["ARGV"]
-				argvArray := p.array(ast.ScopeGlobal, argvIndex)
+				argvIndex := p.arrayIndexes["ARGV"]
+				argvArray := p.array(resolver.Global, argvIndex)
 				filename := p.toString(argvArray[index])
 				p.filenameIndex++
 
@@ -814,7 +802,7 @@ func writeOutput(w io.Writer, s string) error {
 	return err
 }
 
-// Close all streams, commands, and so on (after program execution).
+// Close all streams and so on (after program execution).
 func (p *interp) closeAll() {
 	if prevInput, ok := p.input.(io.Closer); ok {
 		_ = prevInput.Close()
@@ -824,9 +812,6 @@ func (p *interp) closeAll() {
 	}
 	for _, w := range p.outputStreams {
 		_ = w.Close()
-	}
-	for _, cmd := range p.commands {
-		_ = cmd.Wait()
 	}
 	if f, ok := p.output.(flusher); ok {
 		_ = f.Flush()
@@ -841,11 +826,12 @@ func (p *interp) closeAll() {
 func (p *interp) flushAll() bool {
 	allGood := true
 	for name, writer := range p.outputStreams {
-		allGood = allGood && p.flushWriter(name, writer)
+		if !p.flushWriter(name, writer) {
+			allGood = false
+		}
 	}
-	if _, ok := p.output.(flusher); ok {
-		// User-provided output may or may not be flushable
-		allGood = allGood && p.flushWriter("stdout", p.output)
+	if !p.flushWriter("stdout", p.output) {
+		allGood = false
 	}
 	return allGood
 }

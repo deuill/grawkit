@@ -1,7 +1,8 @@
-# github.com/benhoyt/goawk v1.20.0
-## explicit; go 1.14
+# github.com/benhoyt/goawk v1.26.0
+## explicit; go 1.16
 github.com/benhoyt/goawk/internal/ast
 github.com/benhoyt/goawk/internal/compiler
+github.com/benhoyt/goawk/internal/resolver
 github.com/benhoyt/goawk/interp
 github.com/benhoyt/goawk/lexer
 github.com/benhoyt/goawk/parser

@@ -1,0 +1,32 @@
+name: Grawkit Play Container Build
+on:
+  push:
+    paths:
+      - 'grawkit'
+      - 'play/**'
+env:
+  CONTAINER_NAME: ${{ github.repository_owner }}/grawkit-play
+  CONTAINER_TAG: latest
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Container Build
+    steps:
+      - name: Check Out Repository
+        uses: actions/checkout@v4
+      - name: Login to Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ vars.CONTAINER_REGISTRY_URL }}
+          username: ${{ secrets.CONTAINER_REGISTRY_USERNAME }}
+          password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
+      - name: Build and Push Container
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: play/Containerfile
+          platforms: |
+            linux/amd64
+            linux/arm64
+          push: true
+          tags: ${{ vars.CONTAINER_REGISTRY_URL }}/${{ env.CONTAINER_NAME }}:${{ env.CONTAINER_TAG }}

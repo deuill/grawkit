@@ -6,12 +6,11 @@ import (
 	"io"
 	"math"
 	"os"
-	"os/exec"
 	"strings"
 	"time"
 
-	"github.com/benhoyt/goawk/internal/ast"
 	"github.com/benhoyt/goawk/internal/compiler"
+	"github.com/benhoyt/goawk/internal/resolver"
 	"github.com/benhoyt/goawk/lexer"
 )
 
@@ -60,6 +59,11 @@ func (p *interp) execute(code []compiler.Opcode) error {
 		case compiler.Swap:
 			l, r := p.peekTwo()
 			p.replaceTwo(r, l)
+
+		case compiler.Rote:
+			s := p.peekSlice(3)
+			v0, v1, v2 := s[0], s[1], s[2]
+			s[0], s[1], s[2] = v1, v2, v0
 
 		case compiler.Field:
 			index := p.peekTop()
@@ -180,7 +184,7 @@ func (p *interp) execute(code []compiler.Opcode) error {
 			arrayScope := code[ip]
 			arrayIndex := code[ip+1]
 			ip += 2
-			array := p.array(ast.VarScope(arrayScope), int(arrayIndex))
+			array := p.array(resolver.Scope(arrayScope), int(arrayIndex))
 			index := p.toString(p.pop())
 			delete(array, index)
 
@@ -188,7 +192,7 @@ func (p *interp) execute(code []compiler.Opcode) error {
 			arrayScope := code[ip]
 			arrayIndex := code[ip+1]
 			ip += 2
-			array := p.array(ast.VarScope(arrayScope), int(arrayIndex))
+			array := p.array(resolver.Scope(arrayScope), int(arrayIndex))
 			for k := range array {
 				delete(array, k)
 			}
@@ -587,9 +591,15 @@ func (p *interp) execute(code []compiler.Opcode) error {
 		case compiler.Next:
 			return errNext
 
+		case compiler.Nextfile:
+			return errNextfile
+
 		case compiler.Exit:
-			p.exitStatus = int(p.pop().num())
 			// Return special errExit value "caught" by top-level executor
+			return errExit
+
+		case compiler.ExitStatus:
+			p.exitStatus = int(p.pop().num())
 			return errExit
 
 		case compiler.ForIn:
@@ -599,15 +609,15 @@ func (p *interp) execute(code []compiler.Opcode) error {
 			arrayIndex := code[ip+3]
 			offset := code[ip+4]
 			ip += 5
-			array := p.array(ast.VarScope(arrayScope), int(arrayIndex))
+			array := p.array(resolver.Scope(arrayScope), int(arrayIndex))
 			loopCode := code[ip : ip+int(offset)]
 			for index := range array {
-				switch ast.VarScope(varScope) {
-				case ast.ScopeGlobal:
+				switch resolver.Scope(varScope) {
+				case resolver.Global:
 					p.globals[varIndex] = str(index)
-				case ast.ScopeLocal:
+				case resolver.Local:
 					p.frame[varIndex] = str(index)
-				default: // ScopeSpecial
+				default: // resolver.Special
 					err := p.setSpecial(int(varIndex), str(index))
 					if err != nil {
 						return err
@@ -634,12 +644,19 @@ func (p *interp) execute(code []compiler.Opcode) error {
 				return err
 			}
 
+		case compiler.CallLengthArray:
+			arrayScope := code[ip]
+			arrayIndex := code[ip+1]
+			ip += 2
+			array := p.array(resolver.Scope(arrayScope), int(arrayIndex))
+			p.push(num(float64(len(array))))
+
 		case compiler.CallSplit:
 			arrayScope := code[ip]
 			arrayIndex := code[ip+1]
 			ip += 2
 			s := p.toString(p.peekTop())
-			n, err := p.split(s, ast.VarScope(arrayScope), int(arrayIndex), p.fieldSep)
+			n, err := p.split(s, resolver.Scope(arrayScope), int(arrayIndex), p.fieldSep, p.inputMode)
 			if err != nil {
 				return err
 			}
@@ -650,7 +667,8 @@ func (p *interp) execute(code []compiler.Opcode) error {
 			arrayIndex := code[ip+1]
 			ip += 2
 			s, fieldSep := p.peekPop()
-			n, err := p.split(p.toString(s), ast.VarScope(arrayScope), int(arrayIndex), p.toString(fieldSep))
+			// 3-argument form of split() ignores input mode
+			n, err := p.split(p.toString(s), resolver.Scope(arrayScope), int(arrayIndex), p.toString(fieldSep), DefaultMode)
 			if err != nil {
 				return err
 			}
@@ -683,7 +701,7 @@ func (p *interp) execute(code []compiler.Opcode) error {
 			// Handle array arguments
 			var arrays []int
 			for j := 0; j < numArrayArgs; j++ {
-				arrayScope := ast.VarScope(code[ip])
+				arrayScope := resolver.Scope(code[ip])
 				arrayIndex := int(code[ip+1])
 				ip += 2
 				arrays = append(arrays, p.arrayIndex(arrayScope, arrayIndex))
@@ -880,7 +898,7 @@ func (p *interp) execute(code []compiler.Opcode) error {
 			}
 			index := p.toString(p.peekTop())
 			if ret == 1 {
-				array := p.array(ast.VarScope(arrayScope), int(arrayIndex))
+				array := p.array(resolver.Scope(arrayScope), int(arrayIndex))
 				array[index] = numStr(line)
 			}
 			p.replaceTop(num(ret))
@@ -897,33 +915,25 @@ func (p *interp) callBuiltin(builtinOp compiler.BuiltinOp) error {
 		p.replaceTop(num(math.Atan2(y.num(), x.num())))
 
 	case compiler.BuiltinClose:
+		var err error
+		code := -1
 		name := p.toString(p.peekTop())
-		var c io.Closer = p.inputStreams[name]
-		if c != nil {
+		if stream := p.inputStreams[name]; stream != nil {
 			// Close input stream
 			delete(p.inputStreams, name)
-			err := c.Close()
-			if err != nil {
-				p.replaceTop(num(-1))
-			} else {
-				p.replaceTop(num(0))
-			}
-		} else {
-			c = p.outputStreams[name]
-			if c != nil {
-				// Close output stream
-				delete(p.outputStreams, name)
-				err := c.Close()
-				if err != nil {
-					p.replaceTop(num(-1))
-				} else {
-					p.replaceTop(num(0))
-				}
-			} else {
-				// Nothing to close
-				p.replaceTop(num(-1))
-			}
+			delete(p.scanners, name)
+			err = stream.Close()
+			code = stream.ExitCode()
+		} else if stream := p.outputStreams[name]; stream != nil {
+			// Close output stream
+			delete(p.outputStreams, name)
+			err = stream.Close()
+			code = stream.ExitCode()
 		}
+		if err != nil {
+			p.printErrorf("error closing %q: %v\n", name, err)
+		}
+		p.replaceTop(num(float64(code)))
 
 	case compiler.BuiltinCos:
 		p.replaceTop(num(math.Cos(p.peekTop().num())))
@@ -1071,20 +1081,21 @@ func (p *interp) callBuiltin(builtinOp compiler.BuiltinOp) error {
 		cmd.Stdout = p.output
 		cmd.Stderr = p.errorOutput
 		_ = p.flushAll() // ensure synchronization
-		err := cmd.Run()
-		ret := 0.0
+		err := cmd.Start()
+		if err != nil {
+			// Could not start the shell so skip waiting on it.
+			p.printErrorf("%v\n", err)
+			p.replaceTop(num(-1.0))
+			return nil
+		}
+		exitCode, err := waitExitCode(cmd)
 		if err != nil {
 			if p.checkCtx && p.ctx.Err() != nil {
 				return p.ctx.Err()
 			}
-			if exitErr, ok := err.(*exec.ExitError); ok {
-				ret = float64(exitErr.ProcessState.ExitCode())
-			} else {
-				p.printErrorf("%v\n", err)
-				ret = -1
-			}
+			p.printErrorf("%v\n", err)
 		}
-		p.replaceTop(num(ret))
+		p.replaceTop(num(float64(exitCode)))
 
 	case compiler.BuiltinTolower:
 		p.replaceTop(str(strings.ToLower(p.toString(p.peekTop()))))
