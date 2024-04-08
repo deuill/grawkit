@@ -234,11 +234,10 @@ function parse_arguments(argc, argv, _, arg, i, option) {
 
 		arg = ltrim(argv[i], "-")
 		if (arg == "help") {
-			printf "Usage: grawkit [--help] "
+			printf "Usage: grawkit [OPTION]... [FILE]\nOptions:\n"
 			for (k in config) {
-				printf "[--%s] ", k
+				printf "   --%s=\"%s\"\n   \t%s\n", k, config[k], comment[k]
 			}
-			printf "[FILE]\n"
 			exit exit_code = 0
 		} else {
 			# Check if command-line option given corresponds to a configuration option, or stop
@@ -295,22 +294,35 @@ function rtrim(str, ch) {
 
 BEGIN {
 	# Default configuration and command-line argument parsing.
-	config["default-branch"]      = "master"
-	config["branch-spacing"]      = "50"
-	config["branch-fill"]         = "none"
-	config["branch-stroke-width"] = "10"
+	config["default-branch"]       = "master"
+	comment["default-branch"]      = "The name of the pre-defined base branch."
+	config["branch-spacing"]       = "50"
+	comment["branch-spacing"]      = "The amount of space, in pixels, between branch tracks."
+	config["branch-fill"]          = "none"
+	comment["branch-fill"]         = "The color to fill branch tracks with."
+	config["branch-stroke-width"]  = "10"
+	comment["branch-stroke-width"] = "The stroke width for branch track outlines."
 
-	config["commit-spacing"] = "50"
-	config["commit-fill"]    = "#fff"
+	config["commit-spacing"]  = "50"
+	comment["commit-spacing"] = "The amount of space, in pixels, between commit stops."
+	config["commit-fill"]     = "#fff"
+	comment["commit-fill"]    = "The color to fill commit stops with."
 
-	config["label-spacing"]   = "10"
-	config["label-round"]     = "3"
-	config["label-fill"]      = "#333"
-	config["label-text"]      = "#fff"
-	config["label-font"]      = "Inconsolata, Consolas, monospace"
-	config["label-font-size"] = "14"
+	config["label-spacing"]    = "10"
+	comment["label-spacing"]   = "The amount of space, in pixels, between each label."
+	config["label-round"]      = "3"
+	comment["label-round"]     = "The corner radius, in pixels, for labels."
+	config["label-fill"]       = "#333"
+	comment["label-fill"]      = "The color to fill labels with."
+	config["label-text"]       = "#fff"
+	comment["label-text"]      = "The color to use for label text."
+	config["label-font"]       = "Inconsolata, Consolas, monospace"
+	comment["label-font"]      = "The font to use for label text."
+	config["label-font-size"]  = "14"
+	comment["label-font-size"] = "The font size to use for label text, in points."
 
-	config["palette"] = "#002b36,#268bd2,#859900,#cb4b16,#2aa198,#dc322f,#d33682,#6c71c4,#b58900"
+	config["palette"]  = "#002b36,#268bd2,#859900,#cb4b16,#2aa198,#dc322f,#d33682,#6c71c4,#b58900"
+	comment["palette"] = "The colors to use for each branch track, in order."
 	parse_arguments(ARGC, ARGV)
 
 	# Errors.
