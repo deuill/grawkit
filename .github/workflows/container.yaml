@@ -4,6 +4,7 @@ on:
     paths:
       - 'grawkit'
       - 'play/**'
+      - '.github/workflows/container.yaml'
 env:
   CONTAINER_NAME: ${{ github.repository_owner }}/grawkit-play
   CONTAINER_TAG: latest
@@ -16,8 +17,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Install dependencies
         run: |
-          apt-get update -y
-          apt-get install -y podman buildah
+          sudo apt-get update -y
+          sudo apt-get install -y podman buildah
       - name: Build container image
         id: build-image
         uses: redhat-actions/buildah-build@v2
