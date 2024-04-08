@@ -1,5 +1,9 @@
 name: Grawkit Play Container Build
-on: push
+on:
+  push:
+    paths:
+      - 'grawkit'
+      - 'play/**'
 env:
   CONTAINER_NAME: ${{ github.repository_owner }}/grawkit-play
   CONTAINER_TAG: latest
@@ -31,4 +35,4 @@ jobs:
           username: ${{ secrets.CONTAINER_REGISTRY_USERNAME }}
           password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
       - name: Print container image URL
-        run: echo "Image pushed to ${{ steps.push-to-quay.outputs.registry-paths }}"
+        run: echo "Image pushed to ${{ steps.push-to-registry.outputs.registry-paths }}"
