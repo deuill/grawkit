@@ -1,0 +1,35 @@
+name: Grawkit Test
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+jobs:
+  test-gawk:
+    runs-on: ubuntu-latest
+    name: Test with GNU AWK
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y gawk
+      - name: Run tests
+        run: |
+          make test AWK=gawk
+  test-busybox-awk:
+    runs-on: ubuntu-latest
+    name: Test with Busybox AWK
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y busybox
+      - name: Run tests
+        run: |
+          make test AWK="busybox awk"

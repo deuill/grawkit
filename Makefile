@@ -63,28 +63,19 @@ doc:
 	@awk "$$EXTRACT_MARKDOWN" "$(CMD)"
 
 ## Execute test suite, accepts list of specific files to run.
-test: test-before $(TESTS) test-after
-
-test-before:
-	@printf ">> $(BOLD)Executing tests...$(RESET)\n"
-
-test-after:
-	@printf ">> $(BOLD)Finished executing tests.$(RESET)\n"
+test: $(TESTS)
 
 $(TESTS):
-	$(eval TEST_$@     := awk '/<!--/ {f=1;next} /-->/ {exit} f' $@)
-	$(eval EXPECTED_$@ := awk '/-->/ {f=1;getline;next} f' $@)
-	$(eval ACTUAL_$@   := $(AWK) -f $(CMD) <($(TEST_$@)))
-
 	@printf ">> $(BOLD)Testing file '$@'...$(RESET) "
-
-    # Generate diff between expected and actual results and print back to user.
-	@result=$$($(DIFF) -ud <($(EXPECTED_$@)) <($(ACTUAL_$@)) | tail -n +3); \
+	@result=$$($(DIFF) -ud \
+	           <(awk '/-->/ {f=1;getline;next} f' $@) <($(AWK) -f $(CMD)    \
+	           <(awk '/<!--/ {f=1;next} /-->/ {exit} f' $@)) | tail -n +3); \
 	if [ -z "$$result" ]; then                                              \
 		printf "$(GREEN)OK$(RESET)\n";                                      \
 	else                                                                    \
 		printf "$(RED)FAIL$(RESET)\n";                                      \
 		echo "$$result";                                                    \
+		exit 1;                                                             \
 	fi                                                                      \
 
 ## Show usage information for this Makefile.
