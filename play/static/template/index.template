@@ -6,43 +6,33 @@
 		<title>Grawkit Playground</title>
 		<meta name="description" content="">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
-
-		<link rel="stylesheet" href="/css/normalize.css">
-		<link rel="stylesheet" href="/css/skeleton.css">
+		<link rel="stylesheet" href="/css/bootstrap.min.css">
 		<link rel="stylesheet" href="/css/main.css">
 	</head>
 
 	<body>
-		<form action="/" method="post" class="content">
-			<div class="preview-header">
-				<div class="container row">
-					<div class="column one-half">
-						<a href="/">
-							<span class="title">Grawkit<br>Playground</span>
-							<img src="/img/logo.png" alt="Grawkit Logo" class="logo">
-						</a>
-					</div>
-					<div class="column one-half">
-						<div class="action-buttons">
-							<button type="submit" name="generate" class="button button-alt" onclick="submitForm(this.form); return false;">Generate</button>
-							<button type="submit" name="download" class="button">Download</button>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="preview-content">
-				<div class="container row">
-					<div class="column one-half">
-						<textarea name="content" class="editor">{{if .Content}}{{printf .Content}}{{else}}{{template "default-content.template"}}{{end}}</textarea>
-					</div>
-					<div class="column one-half">
-						<div id="generated" class="preview-generated">{{if .Preview}}{{printf .Preview}}{{else}}{{template "default-preview.template"}}{{end}}</div>
-					</div>
-				</div>
-			</div>
-			<div class="preview-footer">
+		<form action="/" method="post">
+			<nav class="navbar navbar-light bg-light mb-3">
 				<div class="container">
-					<div id="error" class="error">{{if .Error}}{{printf .Error}}{{end}}</div>
+					<a href="/" class="navbar-brand">
+						<img src="/img/logo.png" alt="Grawkit Logo" class="logo">
+						<span class="title">Grawkit Playground</span>
+					</a>
+					<div class="form-inline navbar-right">
+						<button type="submit" name="generate" class="btn btn-primary" onclick="submitForm(this.form); return false;">Generate</button>
+						<button type="submit" name="download" class="btn btn-default">Download</button>
+					</div>
+				</div>
+			</nav>
+			<div class="container">
+				<div id="preview-error" class="alert alert-danger">{{if .Error}}{{printf .Error}}{{end}}</div>
+				<div class="row">
+					<div class="col-sm mb-3">
+						<textarea id="editor" name="content" class="form-control">{{if .Content}}{{printf .Content}}{{else}}{{template "default-content.template"}}{{end}}</textarea>
+					</div>
+					<div class="col-sm mb-3">
+						<div id="preview-generated">{{if .Preview}}{{printf .Preview}}{{else}}{{template "default-preview.template"}}{{end}}</div>
+					</div>
 				</div>
 			</div>
 		</form>

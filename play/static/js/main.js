@@ -13,10 +13,10 @@ var submitForm = function(el) {
 		}
 
 		if (this.status == 200) {
-			document.getElementById('generated').innerHTML = this.responseText;
-			document.getElementById('error').innerHTML = '';
+			document.getElementById('preview-generated').innerHTML = this.responseText;
+			document.getElementById('preview-error').innerHTML = '';
 		} else {
-			document.getElementById('error').innerHTML = this.getResponseHeader('X-Error-Message');
+			document.getElementById('preview-error').innerHTML = this.getResponseHeader('X-Error-Message');
 		}
 	};
 
