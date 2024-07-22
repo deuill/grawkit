@@ -9,8 +9,8 @@ AWK implementation built entirely in Go, and used here as a library.
 
 ## Installation & Usage
 
-Only a fairly recent version of Go is required to build this package, and the included `play.go`
-file can be executed on-the-fly using `go run`.
+Only a fairly recent version of Go is required to build this package, and the included `main.go`
+file can be executed on-the-fly using `go run .`.
 
 The program expects to find a `static` directory (which is provided alongside the source code
 here), as well as the `grawkit` script; by default, these are expected to be found in the current

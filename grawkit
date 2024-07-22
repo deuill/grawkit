@@ -236,7 +236,7 @@ function parse_arguments(argc, argv, _, arg, i, option) {
 		if (arg == "help") {
 			printf "Usage: grawkit [OPTION]... [FILE]\nOptions:\n"
 			for (k in config) {
-				printf "   --%s=\"%s\"\n   \t%s\n", k, config[k], comment[k]
+				printf "  --%s=\"%s\"\n  \t%s\n", k, config[k], comment[k]
 			}
 			exit exit_code = 0
 		} else {

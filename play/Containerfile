@@ -2,7 +2,7 @@ FROM docker.io/golang:1.22 AS builder
 WORKDIR /src
 
 COPY play/ /src/
-RUN go build -o /play play.go
+RUN go build -o /play main.go
 
 FROM docker.io/debian:stable-slim
 WORKDIR /play

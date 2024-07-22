@@ -28,12 +28,27 @@
 				<div id="preview-error" class="alert alert-danger">{{if .Error}}{{printf .Error}}{{end}}</div>
 				<div class="row">
 					<div class="col-sm mb-3">
-						<textarea id="editor" name="content" class="form-control">{{if .Content}}{{printf .Content}}{{else}}{{template "default-content.template"}}{{end}}</textarea>
+						<textarea id="editor" name="content" class="form-control bg-light">{{if .Content}}{{printf .Content}}{{else}}{{template "default-content.template"}}{{end}}</textarea>
 					</div>
 					<div class="col-sm mb-3">
 						<div id="preview-generated">{{if .Preview}}{{printf .Preview}}{{else}}{{template "default-preview.template"}}{{end}}</div>
 					</div>
 				</div>
+				<div class="row">
+					<div class="col-sm">
+						<h2>Options</h2>
+					</div>
+				</div>
+				{{range $config := group .Config 3}}
+				<div class="row">
+					{{range $config}}
+					<div class="col-sm form-group">
+						<label for="config-{{.Name}}">{{.Name}}</label>
+						<input type="{{.Type}}" name="config-{{.Name}}" value="{{.Value}}" class="form-control">
+					</div>
+					{{end}}
+				</div>
+				{{end}}
 			</div>
 		</form>
 		<script src="/js/main.js"></script>
