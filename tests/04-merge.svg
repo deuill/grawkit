@@ -16,7 +16,7 @@ git merge test-merging
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 204 270">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 329 270">
 <style type="text/css"><![CDATA[
 .branch {
 	fill: none;
@@ -28,6 +28,12 @@ git merge test-merging
 	stroke-width: 5;
 }
 .label-tag {
+	fill: #333;
+}
+.label-message {
+	fill: #fff;
+}
+.label-message .label-text {
 	fill: #333;
 }
 .label-rect {
@@ -59,6 +65,10 @@ git merge test-merging
 		<rect x="0" y="-14" width="94" height="24" rx="3" class="label-rect" />
 		<text x="5" y="2" textLength="84" class="label-text">test-merging</text>
 	</g>
+	<g class="label-message" transform="translate(204,100)">
+		<rect x="0" y="-14" width="115" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" textLength="105" class="label-text">A sample commit</text>
+	</g>
 </g>
 <g class="branch-master">
 	<path class="branch" d="M0,50 L0,200" />
@@ -68,6 +78,14 @@ git merge test-merging
 	<g class="label-branch" transform="translate(100,200)">
 		<rect x="0" y="-14" width="52" height="24" rx="3" class="label-rect" />
 		<text x="5" y="2" textLength="42" class="label-text">master</text>
+	</g>
+	<g class="label-message" transform="translate(100,50)">
+		<rect x="0" y="-14" width="122" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" textLength="112" class="label-text">Commit on master</text>
+	</g>
+	<g class="label-message" transform="translate(100,150)">
+		<rect x="0" y="-14" width="157" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" textLength="147" class="label-text">Another master commit</text>
 	</g>
 </g>
 </svg>

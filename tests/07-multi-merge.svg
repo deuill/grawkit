@@ -37,6 +37,12 @@ git merge second
 .label-tag {
 	fill: #333;
 }
+.label-message {
+	fill: #fff;
+}
+.label-message .label-text {
+	fill: #333;
+}
 .label-rect {
 	stroke: none;
 }

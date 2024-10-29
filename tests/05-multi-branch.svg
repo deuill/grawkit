@@ -42,6 +42,12 @@ git commit
 .label-tag {
 	fill: #333;
 }
+.label-message {
+	fill: #fff;
+}
+.label-message .label-text {
+	fill: #333;
+}
 .label-rect {
 	stroke: none;
 }
@@ -115,6 +121,14 @@ git commit
 	<g class="label-branch" transform="translate(200,300)">
 		<rect x="0" y="-14" width="52" height="24" rx="3" class="label-rect" />
 		<text x="5" y="2" textLength="42" class="label-text">master</text>
+	</g>
+	<g class="label-message" transform="translate(200,50)">
+		<rect x="0" y="-14" width="122" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" textLength="112" class="label-text">Commit on master</text>
+	</g>
+	<g class="label-message" transform="translate(269,100)">
+		<rect x="0" y="-14" width="115" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" textLength="105" class="label-text">Still on master</text>
 	</g>
 </g>
 </svg>

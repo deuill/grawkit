@@ -7,7 +7,7 @@ git commit
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 112 170">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 203 170">
 <style type="text/css"><![CDATA[
 .branch {
 	fill: none;
@@ -19,6 +19,12 @@ git commit
 	stroke-width: 5;
 }
 .label-tag {
+	fill: #333;
+}
+.label-message {
+	fill: #fff;
+}
+.label-message .label-text {
 	fill: #333;
 }
 .label-rect {
@@ -45,6 +51,10 @@ git commit
 	<g class="label-branch" transform="translate(50,100)">
 		<rect x="0" y="-14" width="52" height="24" rx="3" class="label-rect" />
 		<text x="5" y="2" textLength="42" class="label-text">master</text>
+	</g>
+	<g class="label-message" transform="translate(50,50)">
+		<rect x="0" y="-14" width="143" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" textLength="133" class="label-text">Adding a new commit</text>
 	</g>
 </g>
 </svg>

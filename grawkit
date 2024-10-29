@@ -49,14 +49,14 @@ function add_commit(type, msg) {
 }
 
 # > Function `render_branch` renders pre-defined branch under a specific name to its SVG representation.
-function render_branch(idx, _, buf, tmp, refs, tags, t, i, n, hspc, vspc) {
+function render_branch(idx, _, buf, tmp, refs, tags, t, i, nr, nt, hspc, vspc) {
 	# Do not render branch with no commits.
 	if (branches[idx,"refs"] == "") {
 		return
 	}
 
 	# Get commit refs.
-	n = split(branches[idx,"refs"], refs, ",")
+	nr = split(branches[idx,"refs"], refs, ",")
 	hspc = idx * style["branch/spacing"]
 
 	# Print branch root element.
@@ -70,7 +70,7 @@ function render_branch(idx, _, buf, tmp, refs, tags, t, i, n, hspc, vspc) {
 	buf = buf "\n\t" sprintf(svg["path"], tmp)
 
 	# Add commits on path.
-	for (i = 1; i <= n; i++) {
+	for (i = 1; i <= nr; i++) {
 		vspc = refs[i] * style["commit/spacing"]
 
 		tmp = sprintf(svg["circle"], hspc, vspc, style["commit/radius"])
@@ -78,14 +78,22 @@ function render_branch(idx, _, buf, tmp, refs, tags, t, i, n, hspc, vspc) {
 	}
 
 	# Add branch tags as labels.
-	n = split(branches[idx,"tags"], tags, ",")
-	for (i = 1; i <= n; i++) {
+	nt = split(branches[idx,"tags"], tags, ",")
+	for (i = 1; i <= nt; i++) {
 		split(tags[i], t, "|")
 		buf = buf render_label(t[1], t[2], t[3])
 	}
 
 	# Add branch name as label on last commit.
 	buf = buf render_label(refs[count(refs)], "branch", branches[idx,"name"])
+
+	# Add commit message labels for each commit.
+	for (i = 1; i <= nr; i++) {
+		msg = commits[refs[i],"message"]
+		if (msg != "") {
+			buf = buf render_label(refs[i], "message", msg)
+		}
+	}
 
 	return buf "\n" svg["/g"]
 }
@@ -213,7 +221,6 @@ function parse_command(str, _, i, m) {
 		str = substr(str, 0, RSTART - 1) substr(str, RSTART + RLENGTH)
 		match(str, rule["argument"])
 	}
-
 
 	# Match target, if any.
 	match(str, rule["target"])
@@ -411,11 +418,7 @@ $0 ~ rule["commit"] {
 
 	# Add new commit.
 	msg = command["argument","message"] ? command["argument","message"] : command["argument","m"]
-	if (msg != "") {
-		add_commit("commit", msg)
-	} else {
-		add_commit("commit", "Empty message")
-	}
+	add_commit("commit", msg)
 
 	next
 }
@@ -504,7 +507,7 @@ $0 ~ rule["merge"] {
 	}
 
 	# Add a merge commit to current branch.
-	add_commit("merge", "Merge commit")
+	add_commit("merge", "")
 
 	# Add merge reference from last commit in source branch to target branch.
     # Format: to-branch|from-commit|to-commit
@@ -605,6 +608,12 @@ END {
 	print "\tstroke-width: " style["commit/stroke-width"] ";"
 	print "}"
 	print ".label-tag {"
+	print "\tfill: " style["label/fill"] ";"
+	print "}"
+	print ".label-message {"
+	print "\tfill: " style["label/text"] ";"
+	print "}"
+	print ".label-message .label-text {"
 	print "\tfill: " style["label/fill"] ";"
 	print "}"
 	print ".label-rect {"

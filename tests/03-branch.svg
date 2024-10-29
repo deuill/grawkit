@@ -5,7 +5,7 @@
 # branch, then adding a final commit to master.
 
 git commit -m "Commit on master"
-git commit -m "More stuff"
+git commit
 
 git branch test-stuff
 git checkout test-stuff
@@ -14,11 +14,11 @@ git commit -m 'Testing stuff'
 git commit
 
 git checkout master
-git commit
+git commit -m "More stuff"
 
 -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 190 320">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 252 320">
 <style type="text/css"><![CDATA[
 .branch {
 	fill: none;
@@ -30,6 +30,12 @@ git commit
 	stroke-width: 5;
 }
 .label-tag {
+	fill: #333;
+}
+.label-message {
+	fill: #fff;
+}
+.label-message .label-text {
 	fill: #333;
 }
 .label-rect {
@@ -62,6 +68,10 @@ git commit
 		<rect x="0" y="-14" width="80" height="24" rx="3" class="label-rect" />
 		<text x="5" y="2" textLength="70" class="label-text">test-stuff</text>
 	</g>
+	<g class="label-message" transform="translate(100,150)">
+		<rect x="0" y="-14" width="101" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" textLength="91" class="label-text">Testing stuff</text>
+	</g>
 </g>
 <g class="branch-master">
 	<path class="branch" d="M0,50 L0,250" />
@@ -71,6 +81,14 @@ git commit
 	<g class="label-branch" transform="translate(100,250)">
 		<rect x="0" y="-14" width="52" height="24" rx="3" class="label-rect" />
 		<text x="5" y="2" textLength="42" class="label-text">master</text>
+	</g>
+	<g class="label-message" transform="translate(100,50)">
+		<rect x="0" y="-14" width="122" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" textLength="112" class="label-text">Commit on master</text>
+	</g>
+	<g class="label-message" transform="translate(162,250)">
+		<rect x="0" y="-14" width="80" height="24" rx="3" class="label-rect" />
+		<text x="5" y="2" textLength="70" class="label-text">More stuff</text>
 	</g>
 </g>
 </svg>
